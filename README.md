@@ -2,6 +2,28 @@
 
 A comprehensive backend system for a multi-vendor live streaming and short video e-commerce platform built with Node.js, TypeScript, and a hybrid database architecture.
 
+<!-- Create SSL certificates for development: 
+mkdir -p ssl
+openssl req -x509 -newkey rsa:4096 -keyout ssl/key.pem -out ssl/cert.pem -days 365 -nodes -subj "/CN=localhost"
+
+# Stop current containers
+docker-compose down
+
+# Then run with nginx
+docker-compose up -d --build
+
+# Check container status
+docker-compose ps
+
+# Check nginx logs
+docker-compose logs nginx
+
+# Check app logs  
+docker-compose logs app
+
+# Test the endpoint
+curl http://localhost/health
+-->
 ## 🚀 Features
 
 ### Core Features
