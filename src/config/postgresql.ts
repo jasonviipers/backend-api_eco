@@ -1,11 +1,11 @@
-import { Pool } from "pg"
+import { Pool, PoolConfig } from "pg"
 import { logger } from "../utils/logger"
 
 let pool: Pool
 
 export const connectPostgreSQL = async (): Promise<void> => {
   try {
-    pool = new Pool({
+    const config:PoolConfig  = {
       host: process.env.POSTGRES_HOST || "localhost",
       port: Number.parseInt(process.env.POSTGRES_PORT || "5432"),
       database: process.env.POSTGRES_DB || "ecommerce_platform",
@@ -14,7 +14,12 @@ export const connectPostgreSQL = async (): Promise<void> => {
       max: 20,
       idleTimeoutMillis: 30000,
       connectionTimeoutMillis: 2000,
-    })
+      ssl: process.env.POSTGRES_SSL === 'true' ? {
+        rejectUnauthorized: false,
+      } : false,
+    }
+
+    pool = new Pool(config)
 
     // Test connection
     const client = await pool.connect()

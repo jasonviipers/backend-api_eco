@@ -1,33 +1,18 @@
 {
-  "name": "live-streaming-ecommerce-backend",
-  "version": "1.0.0",
-  "description": "Live Streaming & Short Video E-commerce Platform Backend",
-  "main": "dist/server.js",
-  "private": true,
+  "name": "backend-api_eco",
   "scripts": {
-    "dev": "bun run --watch src/server.ts",
-    "start": "bun run dist/index.js",
-    "build": "bun build src/index.ts --outdir dist",
-    "test": "jest",
-    "migrate": "ts-node src/scripts/migrate.ts",
-    "seed": "ts-node src/scripts/seed.ts"
+    "dev": "bun run --hot src/server.ts",
+    "migrate": "bun run scripts/migrate.ts"
   },
   "dependencies": {
-    "bcryptjs": "latest",
+    "@paralleldrive/cuid2": "^2.2.2",
     "cassandra-driver": "latest",
-    "class-variance-authority": "^0.7.1",
     "cloudinary": "latest",
     "compression": "latest",
-    "cors": "latest",
-    "date-fns": "4.1.0",
     "dotenv": "latest",
-    "express": "latest",
-    "express-rate-limit": "latest",
     "ffmpeg-static": "latest",
     "fluent-ffmpeg": "latest",
-    "helmet": "latest",
-    "http": "latest",
-    "jsonwebtoken": "latest",
+    "hono": "latest",
     "multer": "latest",
     "node-media-server": "latest",
     "nodemailer": "latest",
@@ -36,24 +21,17 @@
     "redis": "latest",
     "socket.io": "latest",
     "stripe": "latest",
-    "uuid": "latest",
-    "vaul": "^1.1.2",
     "winston": "latest",
-    "zod": "latest"
+    "zod": "^3.25.67"
   },
   "devDependencies": {
+    "@types/bun": "latest",
     "@types/compression": "^1.8.1",
-    "@types/cors": "^2.8.19",
-    "@types/express": "^5.0.3",
-    "@types/express-session": "^1.18.2",
     "@types/fluent-ffmpeg": "^2.1.27",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^1.4.13",
-    "@types/node": "^24",
     "@types/node-media-server": "^2.3.7",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.15.4",
-    "@types/uuid": "^10.0.0",
     "typescript": "^5"
   }
 }
