@@ -13,6 +13,7 @@
     "ffmpeg-static": "latest",
     "fluent-ffmpeg": "latest",
     "hono": "latest",
+    "hono-rate-limiter": "^0.4.2",
     "multer": "latest",
     "node-media-server": "latest",
     "nodemailer": "latest",

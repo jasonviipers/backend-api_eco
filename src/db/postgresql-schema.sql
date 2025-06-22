@@ -3,8 +3,7 @@ CREATE TABLE users (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
     password VARCHAR(255) NOT NULL,
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
+    full_name VARCHAR(200) NOT NULL,
     phone VARCHAR(20),
     role VARCHAR(20) DEFAULT 'customer' CHECK (role IN ('customer', 'vendor', 'admin')),
     is_active BOOLEAN DEFAULT true,
@@ -14,7 +13,9 @@ CREATE TABLE users (
     reset_expires TIMESTAMP,
     last_login TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    stripe_customer_id VARCHAR(255),
+    avatar VARCHAR(500)
 );
 
 -- Vendors table
@@ -32,7 +33,13 @@ CREATE TABLE vendors (
     rating DECIMAL(3,2) DEFAULT 0.00,
     total_sales DECIMAL(12,2) DEFAULT 0.00,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    logo_url VARCHAR(500),
+    business_type VARCHAR(100),
+    website VARCHAR(500),
+    documents JSONB,
+    follower_count INTEGER DEFAULT 0,
+    status_reason TEXT
 );
 
 -- Categories table
@@ -148,8 +155,7 @@ CREATE TABLE addresses (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     type VARCHAR(20) DEFAULT 'shipping' CHECK (type IN ('shipping', 'billing')),
-    first_name VARCHAR(100) NOT NULL,
-    last_name VARCHAR(100) NOT NULL,
+    full_name VARCHAR(200) NOT NULL,
     company VARCHAR(100),
     address_line_1 VARCHAR(255) NOT NULL,
     address_line_2 VARCHAR(255),
@@ -216,7 +222,12 @@ CREATE TABLE short_videos (
     is_active BOOLEAN DEFAULT true,
     cloudinary_id VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    processing_status VARCHAR(20) DEFAULT 'pending' CHECK (processing_status IN ('pending', 'processing', 'completed', 'failed')),
+    original_size BIGINT DEFAULT 0,
+    processed_formats JSONB DEFAULT '[]',
+    thumbnails JSONB DEFAULT '[]',
+    metadata JSONB DEFAULT '{}'
 );
 
 -- Video likes table
@@ -273,6 +284,41 @@ CREATE TABLE cart_items (
     UNIQUE(user_id, product_id, variant_id)
 );
 
+-- Vendor followers table
+CREATE TABLE vendor_followers (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(user_id, vendor_id)
+);
+
+-- Payouts table
+CREATE TABLE payouts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE,
+    amount DECIMAL(10,2) NOT NULL,
+    payment_method VARCHAR(50) DEFAULT 'bank_transfer',
+    status VARCHAR(20) DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
+    stripe_transfer_id VARCHAR(255),
+    processed_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Refunds table
+CREATE TABLE refunds (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    order_id UUID REFERENCES orders(id) ON DELETE CASCADE,
+    stripe_refund_id VARCHAR(255),
+    amount DECIMAL(10,2) NOT NULL,
+    reason TEXT,
+    status VARCHAR(20) DEFAULT 'pending',
+    processed_by UUID REFERENCES users(id),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
@@ -289,6 +335,12 @@ CREATE INDEX idx_short_videos_user_id ON short_videos(user_id);
 CREATE INDEX idx_short_videos_is_active ON short_videos(is_active);
 CREATE INDEX idx_notifications_user_id ON notifications(user_id);
 CREATE INDEX idx_reviews_product_id ON reviews(product_id);
+CREATE INDEX idx_vendor_followers_user_id ON vendor_followers(user_id);
+CREATE INDEX idx_vendor_followers_vendor_id ON vendor_followers(vendor_id);
+CREATE INDEX idx_payouts_vendor_id ON payouts(vendor_id);
+CREATE INDEX idx_payouts_status ON payouts(status);
+CREATE INDEX idx_refunds_order_id ON refunds(order_id);
+CREATE INDEX idx_short_videos_processing_status ON short_videos(processing_status);
 
 -- Create updated_at trigger function
 CREATE OR REPLACE FUNCTION update_updated_at_column()
@@ -307,3 +359,5 @@ CREATE TRIGGER update_orders_updated_at BEFORE UPDATE ON orders FOR EACH ROW EXE
 CREATE TRIGGER update_payments_updated_at BEFORE UPDATE ON payments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_live_streams_updated_at BEFORE UPDATE ON live_streams FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_short_videos_updated_at BEFORE UPDATE ON short_videos FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_payouts_updated_at BEFORE UPDATE ON payouts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_refunds_updated_at BEFORE UPDATE ON refunds FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

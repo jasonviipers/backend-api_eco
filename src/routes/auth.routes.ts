@@ -1,29 +1,18 @@
 import { Hono } from 'hono'
-import { decode, sign, verify } from 'hono/jwt'
+import { sign, verify } from 'hono/jwt'
+import type { JwtVariables } from 'hono/jwt'
 import { validator } from 'hono/validator'
 import { createId } from '@paralleldrive/cuid2'
 import { forgotPasswordSchema, loginSchema, registerSchema, resetPasswordSchema, verifyEmailSchema } from '../schemas/auth'
 import { query } from '../config/postgresql'
 import { deleteCache, getCache, setCache } from '../config/redis'
 import { logger } from '../utils/logger'
+import { generateOtp } from '../utils/opt'
 
 
-type CustomJWTPayload = {
-  id: number;
-  email?: string;
-  firstName?: string;
-  lastName?: string;
-  role?: string;
-  nbf?: number;
-  iat?: number;
-  exp?: number;
-}
+type Variables = JwtVariables
 
-interface Variables {
-  jwtPayload: CustomJWTPayload;
-}
-
-export const auth = new Hono<{ Variables: Variables }>()
+const auth = new Hono<{ Variables: Variables }>()
 auth.post(
   '/register',
   validator('json', (value, c) => {
@@ -34,25 +23,23 @@ auth.post(
     return parsed.data
   }),
   async (c) => {
-    const { email, password, firstName, lastName, phone, role } = c.req.valid('json')
+    const { email, password, full_name, phone, role } = c.req.valid('json')
     const existingUser = await query('SELECT * FROM users WHERE email = $1', [email])
     if (existingUser.rows.length > 0) {
       return c.json({ error: 'Please enter a valid email' }, 409)
     }
     const hashedPassword = await Bun.password.hash(password)
-    const verificationToken = createId()
+    const verificationToken = generateOtp()
     const newUser = await query(
-      `INSERT INTO users (email, password, first_name, last_name, phone, role, verification_token, is_active)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id, email, first_name, last_name, role`,
-      [email, hashedPassword, firstName, lastName, phone, role, verificationToken, false]
+      `INSERT INTO users (email, password, full_name, phone, role, verification_token, is_active)
+      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, email, full_name, role`,
+      [email, hashedPassword, full_name, phone, role, verificationToken, false]
     );
     const user = newUser.rows[0]
 
     if (role === "vendor") {
       await query("INSERT INTO vendors (user_id, business_name, status) VALUES ($1, $2, $3)", [
-        user.id,
-        `${firstName} ${lastName}`,
-        "pending",
+        user.id, `${full_name}`, "pending",
       ]);
     }
     // TODO: Send verification email
@@ -61,8 +48,7 @@ auth.post(
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
+        full_name: user.full_name,
         role: user.role,
       },
     }, 201)
@@ -82,7 +68,7 @@ auth.post(
     const { email, password } = c.req.valid('json')
 
     const userResult = await query(
-      "SELECT id, email, password, first_name, last_name, role, is_active, email_verified FROM users WHERE email = $1",
+      "SELECT id, email, password, full_name, role, is_active, email_verified FROM users WHERE email = $1",
       [email]
     )
 
@@ -110,8 +96,7 @@ auth.post(
       {
         id: user.id,
         email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
+        full_name: user.full_name,
         role: user.role,
       },
       process.env.JWT_SECRET ?? '',
@@ -133,8 +118,7 @@ auth.post(
       user: {
         id: user.id,
         email: user.email,
-        firstName: user.first_name,
-        lastName: user.last_name,
+        full_name: user.full_name,
         role: user.role,
       },
     })
@@ -150,12 +134,12 @@ auth.post(
     }
 
     try {
-      const decoded = await verify(refreshToken, process.env.JWT_REFRESH_SECRET ?? '') as CustomJWTPayload
+      const decoded = await verify(refreshToken, process.env.JWT_REFRESH_SECRET ?? '')
       const storedToken = await getCache(`refresh_token:${decoded.id}`)
       if (storedToken !== refreshToken) {
         return c.json({ error: "Invalid refresh token" }, 401)
       }
-      const userResult = await query("SELECT id, email, role FROM users WHERE id = $1 AND is_active = true", [
+      const userResult = await query("SELECT id, email, full_name, role FROM users WHERE id = $1 AND is_active = true", [
         decoded.id,
       ])
 
@@ -169,6 +153,7 @@ auth.post(
         {
           id: user.id,
           email: user.email,
+          full_name: user.full_name,
           role: user.role,
         },
         process.env.JWT_SECRET ?? '',
@@ -275,7 +260,7 @@ auth.post(
 
     if (refreshToken) {
       try {
-        const decoded = await verify(refreshToken, process.env.JWT_REFRESH_SECRET ?? '') as CustomJWTPayload
+        const decoded = await verify(refreshToken, process.env.JWT_REFRESH_SECRET ?? '') 
         await deleteCache(`refresh_token:${decoded.id}`)
       } catch (error) {
         // Token might be invalid, but we still want to logout
@@ -286,3 +271,5 @@ auth.post(
     return c.json({ message: "Logged out successfully" })
   }
 )
+
+export default auth

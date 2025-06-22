@@ -1,14 +1,15 @@
 import type { Server as SocketIOServer, Socket } from "socket.io"
-import jwt from "jsonwebtoken"
+import { verify } from 'hono/jwt'
 import { logger } from "../utils/logger"
 import { executeQuery } from "./cassandra"
+import { CustomJWTPayload } from "../routes/auth.routes"
 
 interface AuthenticatedSocket extends Socket {
   userId?: string
   userRole?: string
 }
 
-export const setupSocketIO = (io: SocketIOServer): void => {
+export const setupSocketIO = async (io: SocketIOServer) => {
   // Authentication middleware for Socket.IO
   io.use(async (socket: any, next) => {
     try {
@@ -17,8 +18,8 @@ export const setupSocketIO = (io: SocketIOServer): void => {
         return next(new Error("Authentication error"))
       }
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
-      socket.userId = decoded.userId
+      const decoded = await verify(token, process.env.JWT_SECRET ?? '') as CustomJWTPayload
+      socket.userId = decoded.id
       socket.userRole = decoded.role
       next()
     } catch (error) {

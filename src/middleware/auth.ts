@@ -1,0 +1,44 @@
+import { Context, Next } from "hono"
+import { verify } from "hono/jwt"
+
+import { query } from "../config/postgresql"
+import { logger } from "../utils/logger"
+
+
+export const authenticateToken = async (c: Context, next: Next) => {
+    try {
+        const authHeader = c.req.header("authorization")
+        const token = authHeader && authHeader.split(" ")[1]
+
+        if (!token) {
+            return c.json({ message: "Access token required" }, 401)
+        }
+
+        const decoded = await verify(token, process.env.JWT_SECRET || '') as { id: string }
+
+        const userResult = await query("SELECT id, email, role, is_active FROM users WHERE id = $1", [decoded.id])
+
+        if (userResult.rows.length === 0 || !userResult.rows[0].is_active) {
+            return c.json({ message: "Invalid or inactive user" }, 401)
+        }
+
+        const user = userResult.rows[0]
+        const { id, email, role } = user
+        c.set("user", { id, email, role })
+
+        if (user.role === "vendor") {
+            const vendorResult = await query("SELECT id FROM vendors WHERE user_id = $1", [id])
+            if (vendorResult.rows.length === 0) {
+                return c.json({ message: "Vendor not found" }, 404)
+            }
+            const vendorId = vendorResult.rows[0].id
+            c.set("vendorId", vendorId)
+        }
+
+        return next()
+    } catch (error) {
+        logger.error(error)
+        return c.json({ message: "Invalid or expired token" }, 403)
+    }
+}
+
