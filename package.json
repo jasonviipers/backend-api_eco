@@ -25,6 +25,7 @@
 		"socket.io": "latest",
 		"stripe": "latest",
 		"winston": "latest",
+		"winston-daily-rotate-file": "^5.0.0",
 		"zod": "^3.25.67"
 	},
 	"devDependencies": {
