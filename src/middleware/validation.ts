@@ -1,6 +1,6 @@
 import type { Context, Next } from "hono";
-import { type ZodSchema, ZodError } from "zod";
 import { HTTPException } from "hono/http-exception";
+import { ZodError, type ZodSchema } from "zod";
 
 export const validateRequest = (schema: {
 	body?: ZodSchema;

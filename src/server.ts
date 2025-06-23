@@ -1,29 +1,27 @@
-import { Hono } from "hono";
-import { cors } from "hono/cors";
-import { compress } from "hono/compress";
-import { poweredBy } from "hono/powered-by";
-import { Server as HttpServer } from "node:http";
-import { Server as SocketIOServer } from "socket.io";
+import type { Server as HttpServer } from "node:http";
 import dotenv from "dotenv";
-import { rateLimiter } from "hono-rate-limiter";
+import { Hono } from "hono";
+import { compress } from "hono/compress";
+import { cors } from "hono/cors";
+import { poweredBy } from "hono/powered-by";
 import { secureHeaders } from "hono/secure-headers";
-
+import { rateLimiter } from "hono-rate-limiter";
+import { Server as SocketIOServer } from "socket.io";
+import { connectCassandra } from "./config/cassandra";
+import { initializeCloudinary } from "./config/cloudinary";
+import { setupMediaServer } from "./config/mediaServer";
 // Import configurations and middleware
 import { connectPostgreSQL } from "./config/postgresql";
-import { connectCassandra } from "./config/cassandra";
 import { connectRedis } from "./config/redis";
-import { initializeCloudinary } from "./config/cloudinary";
-import { initializeStripe } from "./config/stripe";
 import { setupSocketIO } from "./config/socket";
-import { setupMediaServer } from "./config/mediaServer";
+import { initializeStripe } from "./config/stripe";
 import { errorHandler } from "./middleware/erroHandler";
-import { logger } from "./utils/logger";
-
 // Routes
 import auth from "./routes/auth.routes";
-import { userRouter } from "./routes/user.routes";
 import { productRouter } from "./routes/products";
 import streamRouter from "./routes/stream.routes";
+import { userRouter } from "./routes/user.routes";
+import { logger } from "./utils/logger";
 
 const app = new Hono();
 const io = new SocketIOServer(app as unknown as HttpServer);

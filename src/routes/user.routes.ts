@@ -1,15 +1,15 @@
 import { Hono } from "hono";
+import { executeQuery } from "../config/cassandra";
 import { query } from "../config/postgresql";
 import { deleteCache, getCache, setCache } from "../config/redis";
 import { authenticateToken } from "../middleware/auth";
 import { asyncHandler } from "../middleware/erroHandler";
+import { validateRequest } from "../middleware/validation";
 import {
 	addressSchema,
 	changePasswordSchema,
 	updateProfileSchema,
 } from "../schemas/user";
-import { validateRequest } from "../middleware/validation";
-import { executeQuery } from "../config/cassandra";
 
 export const userRouter = new Hono();
 userRouter

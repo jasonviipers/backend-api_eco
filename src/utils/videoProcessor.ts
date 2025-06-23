@@ -1,7 +1,7 @@
-import ffmpeg from "fluent-ffmpeg";
-import ffmpegStatic from "ffmpeg-static";
-import path from "node:path";
 import fs from "node:fs/promises";
+import path from "node:path";
+import ffmpegStatic from "ffmpeg-static";
+import ffmpeg from "fluent-ffmpeg";
 import { cloudinary } from "../config/cloudinary";
 import { logger } from "./logger";
 

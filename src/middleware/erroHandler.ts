@@ -1,7 +1,7 @@
 import type { Context, Next } from "hono";
 import { HTTPException } from "hono/http-exception";
+import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { logger } from "../utils/logger";
-import { ContentfulStatusCode } from "hono/utils/http-status";
 
 export interface AppError extends Error {
 	statusCode?: number;

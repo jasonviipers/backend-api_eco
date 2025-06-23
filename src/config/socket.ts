@@ -1,8 +1,8 @@
-import type { Server as SocketIOServer, Socket } from "socket.io";
 import { verify } from "hono/jwt";
+import type { Socket, Server as SocketIOServer } from "socket.io";
+import type { CustomJWTPayload } from "../routes/auth.routes";
 import { logger } from "../utils/logger";
 import { executeQuery } from "./cassandra";
-import { CustomJWTPayload } from "../routes/auth.routes";
 
 interface AuthenticatedSocket extends Socket {
 	userId?: string;

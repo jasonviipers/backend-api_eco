@@ -1,4 +1,4 @@
-import { Context, Next } from "hono";
+import type { Context, Next } from "hono";
 import { verify } from "hono/jwt";
 
 import { query } from "../config/postgresql";

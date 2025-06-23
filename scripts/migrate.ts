@@ -1,7 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { logger } from "../src/utils/logger";
 import { connectPostgreSQL, query } from "../src/config/postgresql";
+import { logger } from "../src/utils/logger";
 
 function splitSQLStatements(sql: string): string[] {
 	const statements: string[] = [];
@@ -19,7 +19,7 @@ function splitSQLStatements(sql: string): string[] {
 		// Check for dollar quote start
 		if (line.includes("$$") && !inDollarQuote) {
 			inDollarQuote = true;
-			const match = line.match(/\$([^\$]*)\$/);
+			const match = line.match(/\$([^$]*)\$/);
 			dollarTag = match ? match[1] : "";
 		} else if (
 			line.includes("$$") &&

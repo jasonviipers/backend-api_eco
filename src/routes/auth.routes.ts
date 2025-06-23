@@ -1,8 +1,10 @@
-import { Hono } from "hono";
-import { sign, verify } from "hono/jwt";
-import type { JwtVariables } from "hono/jwt";
-import { validator } from "hono/validator";
 import { createId } from "@paralleldrive/cuid2";
+import { Hono } from "hono";
+import type { JwtVariables } from "hono/jwt";
+import { sign, verify } from "hono/jwt";
+import { validator } from "hono/validator";
+import { query } from "../config/postgresql";
+import { deleteCache, getCache, setCache } from "../config/redis";
 import {
 	forgotPasswordSchema,
 	loginSchema,
@@ -10,8 +12,6 @@ import {
 	resetPasswordSchema,
 	verifyEmailSchema,
 } from "../schemas/auth";
-import { query } from "../config/postgresql";
-import { deleteCache, getCache, setCache } from "../config/redis";
 import { logger } from "../utils/logger";
 import { generateOtp } from "../utils/opt";
 

@@ -1,6 +1,6 @@
-import { processVideo, type ProcessingOptions } from "./videoProcessor";
 import { query } from "../config/postgresql";
 import { logger } from "./logger";
+import { type ProcessingOptions, processVideo } from "./videoProcessor";
 
 interface VideoJob {
 	id: string;
