@@ -5,6 +5,7 @@
       "name": "backend-api_eco",
       "dependencies": {
         "@paralleldrive/cuid2": "^2.2.2",
+        "busboy": "^1.6.0",
         "cassandra-driver": "latest",
         "cloudinary": "latest",
         "compression": "latest",
@@ -13,7 +14,6 @@
         "fluent-ffmpeg": "latest",
         "hono": "latest",
         "hono-rate-limiter": "^0.4.2",
-        "hono-upload": "^0.2.0",
         "multer": "latest",
         "node-media-server": "latest",
         "nodemailer": "latest",
@@ -28,6 +28,7 @@
       "devDependencies": {
         "@biomejs/biome": "latest",
         "@types/bun": "latest",
+        "@types/busboy": "^1.5.4",
         "@types/compression": "^1.8.1",
         "@types/fluent-ffmpeg": "^2.1.27",
         "@types/multer": "^1.4.13",
@@ -82,6 +83,8 @@
     "@types/body-parser": ["@types/body-parser@1.19.6", "", { "dependencies": { "@types/connect": "*", "@types/node": "*" } }, "sha512-HLFeCYgz89uk22N5Qg3dvGvsv46B8GLvKKo1zKG4NybA8U2DiEO3w9lqGg29t/tfLRJpJ6iQxnVw4OnB7MoM9g=="],
 
     "@types/bun": ["@types/bun@1.2.17", "", { "dependencies": { "bun-types": "1.2.17" } }, "sha512-l/BYs/JYt+cXA/0+wUhulYJB6a6p//GTPiJ7nV+QHa8iiId4HZmnu/3J/SowP5g0rTiERY2kfGKXEK5Ehltx4Q=="],
+
+    "@types/busboy": ["@types/busboy@1.5.4", "", { "dependencies": { "@types/node": "*" } }, "sha512-kG7WrUuAKK0NoyxfQHsVE6j1m01s6kMma64E+OZenQABMQyTJop1DumUWcLwAQ2JzpefU7PDYoRDKl8uZosFjw=="],
 
     "@types/compression": ["@types/compression@1.8.1", "", { "dependencies": { "@types/express": "*", "@types/node": "*" } }, "sha512-kCFuWS0ebDbmxs0AXYn6e2r2nrGAb5KwQhknjSPSPgJcGd8+HVSILlUyFhGqML2gk39HcG7D1ydW9/qpYkN00Q=="],
 
@@ -248,8 +251,6 @@
     "hono": ["hono@4.8.2", "", {}, "sha512-hM+1RIn9PK1I6SiTNS6/y7O1mvg88awYLFEuEtoiMtRyT3SD2iu9pSFgbBXT3b1Ua4IwzvSTLvwO0SEhDxCi4w=="],
 
     "hono-rate-limiter": ["hono-rate-limiter@0.4.2", "", { "peerDependencies": { "hono": "^4.1.1" } }, "sha512-AAtFqgADyrmbDijcRTT/HJfwqfvhalya2Zo+MgfdrMPas3zSMD8SU03cv+ZsYwRU1swv7zgVt0shwN059yzhjw=="],
-
-    "hono-upload": ["hono-upload@0.2.0", "", { "dependencies": { "busboy": "^1.6.0" } }, "sha512-ibvVzZk5t6Jate3B9kMa9pa2UVcwAgrjkJ8BAI+Ngd5VfsFJmnLzWsktswmaREu/JBVKTK6xrE7hc8IJ4YWA+g=="],
 
     "http-errors": ["http-errors@2.0.0", "", { "dependencies": { "depd": "2.0.0", "inherits": "2.0.4", "setprototypeof": "1.2.0", "statuses": "2.0.1", "toidentifier": "1.0.1" } }, "sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ=="],
 

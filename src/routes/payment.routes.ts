@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { getStripe } from "../config/stripe";
 import { query } from "../config/postgresql";
 import { logger } from "../utils/logger";
 import { authenticateToken, requireAdmin } from "../middleware/auth";
@@ -11,6 +10,7 @@ import {
 import { validateRequest } from "../middleware/validation";
 import { asyncHandler } from "../middleware/erroHandler";
 import { sendEmail, sendOrderConfirmation } from "../utils/email";
+import { getStripe } from "../config/stripe";
 
 type Variables = {
 	user?: {
@@ -19,13 +19,15 @@ type Variables = {
 		role: string;
 	};
 };
+
 export const paymentRouter = new Hono<{ Variables: Variables }>();
-const stripe = getStripe();
+
 paymentRouter.post(
 	"/create-intent",
 	authenticateToken,
 	validateRequest({ body: createPaymentIntentSchema }),
 	asyncHandler(async (c) => {
+		const stripe = getStripe(); 
 		const userId = c.get("user").id;
 		const { orderId, paymentMethodId, savePaymentMethod } = await c.req.json();
 
@@ -150,11 +152,13 @@ paymentRouter.post(
 		}
 	}),
 );
+
 paymentRouter.post(
 	"/confirm",
 	authenticateToken,
 	validateRequest({ body: confirmPaymentSchema }),
 	asyncHandler(async (c) => {
+		const stripe = getStripe(); 
 		const userId = c.get("user").id;
 		const { paymentIntentId, paymentMethodId } = await c.req.json();
 
@@ -248,6 +252,7 @@ paymentRouter.post(
 	authenticateToken,
 	validateRequest({ body: refundSchema }),
 	asyncHandler(async (c) => {
+		const stripe = getStripe(); 
 		const { orderId, amount, reason } = await c.req.json();
 		const userId = c.get("user").id;
 
@@ -370,6 +375,7 @@ paymentRouter.get(
 	"/methods",
 	authenticateToken,
 	asyncHandler(async (c) => {
+		const stripe = getStripe(); 
 		const userId = c.get("user").id;
 
 		try {
@@ -417,6 +423,7 @@ paymentRouter.delete(
 	"/methods/:id",
 	authenticateToken,
 	asyncHandler(async (c) => {
+		const stripe = getStripe(); 
 		const id = c.req.param("id");
 
 		try {
@@ -433,6 +440,7 @@ paymentRouter.delete(
 paymentRouter.post(
 	"/webhook",
 	asyncHandler(async (c) => {
+		const stripe = getStripe(); 
 		const sig = c.req.header("stripe-signature") as string;
 		const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 		const rawBody = await c.req.raw.arrayBuffer();
@@ -565,7 +573,7 @@ paymentRouter.get(
 			`
         SELECT 
           p.*, o.order_number, o.total_amount, o.user_id,
-          u.first_name, u.last_name, u.email
+          u.full_name,, u.email
         FROM payments p
         JOIN orders o ON p.order_id = o.id
         JOIN users u ON o.user_id = u.id

@@ -23,6 +23,7 @@ import streamRouter from "./routes/stream.routes";
 import { userRouter } from "./routes/user.routes";
 import { logger } from "./utils/logger";
 import { paymentRouter } from "./routes/payment.routes";
+import { videoRoutes } from "./routes/video.routes";
 
 const app = new Hono();
 const io = new SocketIOServer(app as unknown as HttpServer);
@@ -62,6 +63,7 @@ app.route("/user", userRouter);
 app.route("/product", productRouter);
 app.route("/stream", streamRouter);
 app.route("/payment", paymentRouter);
+app.route("/video", videoRoutes);
 
 // Initialize services
 async function initializeServices() {
@@ -72,8 +74,8 @@ async function initializeServices() {
 		await connectRedis();
 
 		// External services
-		initializeCloudinary();
-		initializeStripe();
+		await initializeCloudinary();
+		await initializeStripe();
 
 		// Socket.IO setup
 		setupSocketIO(io);
