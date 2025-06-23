@@ -1,94 +1,105 @@
-import type { Request, Response, NextFunction } from "express"
-import jwt from "jsonwebtoken"
-import { query } from "../config/postgresql"
-import { logger } from "../utils/logger"
+import type { Context, Next } from "hono";
+import { verify } from "hono/jwt";
 
-export interface AuthRequest extends Request {
-  user?: {
-    id: string
-    email: string
-    role: string
-    vendorId?: string
-  }
-}
+import { query } from "../config/postgresql";
+import { logger } from "../utils/logger";
 
-export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
-  try {
-    const authHeader = req.headers["authorization"]
-    const token = authHeader && authHeader.split(" ")[1]
+type AuthVariables = {
+	user?: {
+		id: string;
+		email: string;
+		role: string;
+		vendorId?: string;
+	};
+};
 
-    if (!token) {
-      res.status(401).json({ error: "Access token required" })
-      return
-    }
+export const authenticateToken = async (c: Context, next: Next) => {
+	try {
+		const authHeader = c.req.header("authorization");
+		const token = authHeader && authHeader.split(" ")[1];
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as any
+		if (!token) {
+			return c.json({ message: "Access token required" }, 401);
+		}
 
-    // Verify user still exists and is active
-    const userResult = await query("SELECT id, email, role, is_active FROM users WHERE id = $1", [decoded.userId])
+		const decoded = (await verify(token, process.env.JWT_SECRET || "")) as {
+			id: string;
+		};
 
-    if (userResult.rows.length === 0 || !userResult.rows[0].is_active) {
-      res.status(401).json({ error: "Invalid or inactive user" })
-      return
-    }
+		const userResult = await query(
+			"SELECT id, email, role, is_active FROM users WHERE id = $1",
+			[decoded.id],
+		);
 
-    const user = userResult.rows[0]
-    req.user = {
-      id: user.id,
-      email: user.email,
-      role: user.role,
-    }
+		if (userResult.rows.length === 0 || !userResult.rows[0].is_active) {
+			return c.json({ message: "Invalid or inactive user" }, 401);
+		}
 
-    // If user is a vendor, get vendor ID
-    if (user.role === "vendor") {
-      const vendorResult = await query("SELECT id FROM vendors WHERE user_id = $1", [user.id])
-      if (vendorResult.rows.length > 0) {
-        req.user.vendorId = vendorResult.rows[0].id
-      }
-    }
+		const user = userResult.rows[0];
+		const { id, email, role } = user;
+		c.set("user", { id, email, role });
 
-    next()
-  } catch (error) {
-    logger.error("Authentication error:", error)
-    res.status(403).json({ error: "Invalid token" })
-  }
-}
+		if (user.role === "vendor") {
+			const vendorResult = await query(
+				"SELECT id FROM vendors WHERE user_id = $1",
+				[id],
+			);
+			if (vendorResult.rows.length === 0) {
+				return c.json({ message: "Vendor not found" }, 404);
+			}
+			const vendorId = vendorResult.rows[0].id;
+			c.set("vendorId", vendorId);
+		}
+
+		return next();
+	} catch (error) {
+		logger.error(error);
+		return c.json({ message: "Invalid or expired token" }, 403);
+	}
+};
 
 export const requireRole = (roles: string[]) => {
-  return (req: AuthRequest, res: Response, next: NextFunction): void => {
-    if (!req.user) {
-      res.status(401).json({ error: "Authentication required" })
-      return
-    }
+	return async (
+		c: Context<{ Variables: AuthVariables }>,
+		next: () => Promise<void>,
+	): Promise<void | Response> => {
+		const user = c.get("user");
+		if (!user) {
+			return c.json({ error: "Authentication required" }, 401);
+		}
 
-    if (!roles.includes(req.user.role)) {
-      res.status(403).json({ error: "Insufficient permissions" })
-      return
-    }
+		if (!roles.includes(user.role)) {
+			return c.json({ error: "Insufficient permissions" }, 403);
+		}
 
-    next()
-  }
-}
+		await next();
+	};
+};
 
-export const requireVendor = (req: AuthRequest, res: Response, next: NextFunction): void => {
-  if (!req.user || req.user.role !== "vendor") {
-    res.status(403).json({ error: "Vendor access required" })
-    return
-  }
+export const requireVendor = async (
+	c: Context<{ Variables: AuthVariables }>,
+	next: () => Promise<void>,
+): Promise<void | Response> => {
+	const user = c.get("user");
+	if (!user || user.role !== "vendor") {
+		return c.json({ error: "Vendor access required" }, 403);
+	}
 
-  if (!req.user.vendorId) {
-    res.status(403).json({ error: "Vendor profile not found" })
-    return
-  }
+	if (!user.vendorId) {
+		return c.json({ error: "Vendor profile not found" }, 403);
+	}
 
-  next()
-}
+	await next();
+};
 
-export const requireAdmin = (req: AuthRequest, res: Response, next: NextFunction): void => {
-  if (!req.user || req.user.role !== "admin") {
-    res.status(403).json({ error: "Admin access required" })
-    return
-  }
+export const requireAdmin = async (
+	c: Context<{ Variables: AuthVariables }>,
+	next: () => Promise<void>,
+): Promise<void | Response> => {
+	const user = c.get("user");
+	if (!user || user.role !== "admin") {
+		return c.json({ error: "Admin access required" }, 403);
+	}
 
-  next()
-}
+	await next();
+};
