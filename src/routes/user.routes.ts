@@ -549,11 +549,13 @@ userRouter.post(
 		const { vendorId } = c.req.param();
 
 		// Check if vendor exists
-		const vendorResult = await query("SELECT id FROM vendors WHERE id = $1", [
-			vendorId,
-		]);
+		const vendorResult = await query(
+			"SELECT id FROM vendors WHERE id = $1 FOR UPDATE",
+			[vendorId],
+		);
 
 		if (vendorResult.rows.length === 0) {
+			await query("ROLLBACK");
 			return c.json({ error: "Vendor not found" }, 404);
 		}
 
@@ -569,11 +571,19 @@ userRouter.post(
 				"DELETE FROM vendor_followers WHERE user_id = $1 AND vendor_id = $2",
 				[userId, vendorId],
 			);
-			await query(
-				"UPDATE vendors SET follower_count = follower_count - 1 WHERE id = $1",
+
+			// Recalculate follower count from actual data
+			const countResult = await query(
+				"SELECT COUNT(*) as count FROM vendor_followers WHERE vendor_id = $1",
 				[vendorId],
 			);
 
+			await query("UPDATE vendors SET follower_count = $1 WHERE id = $2", [
+				parseInt(countResult.rows[0].count),
+				vendorId,
+			]);
+
+			await query("COMMIT");
 			return c.json({ message: "Vendor unfollowed", following: false });
 		} else {
 			// Follow
@@ -581,11 +591,19 @@ userRouter.post(
 				"INSERT INTO vendor_followers (user_id, vendor_id) VALUES ($1, $2)",
 				[userId, vendorId],
 			);
-			await query(
-				"UPDATE vendors SET follower_count = follower_count + 1 WHERE id = $1",
+
+			// Recalculate follower count from actual data
+			const countResult = await query(
+				"SELECT COUNT(*) as count FROM vendor_followers WHERE vendor_id = $1",
 				[vendorId],
 			);
 
+			await query("UPDATE vendors SET follower_count = $1 WHERE id = $2", [
+				parseInt(countResult.rows[0].count),
+				vendorId,
+			]);
+
+			await query("COMMIT");
 			return c.json({ message: "Vendor followed", following: true });
 		}
 	}),
