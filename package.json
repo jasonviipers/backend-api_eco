@@ -1,12 +1,15 @@
 {
 	"name": "backend-api_eco",
 	"scripts": {
+		"start": "bun run src/server.ts",
+		"build": "bun build src/server.ts --outdir dist --target node",
 		"dev": "bun run --hot src/server.ts",
 		"migrate": "bun run scripts/migrate.ts",
 		"lint": " bunx biome format --write"
 	},
 	"dependencies": {
 		"@paralleldrive/cuid2": "^2.2.2",
+		"busboy": "^1.6.0",
 		"cassandra-driver": "latest",
 		"cloudinary": "latest",
 		"compression": "latest",
@@ -24,11 +27,13 @@
 		"socket.io": "latest",
 		"stripe": "latest",
 		"winston": "latest",
+		"winston-daily-rotate-file": "^5.0.0",
 		"zod": "^3.25.67"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "latest",
 		"@types/bun": "latest",
+		"@types/busboy": "^1.5.4",
 		"@types/compression": "^1.8.1",
 		"@types/fluent-ffmpeg": "^2.1.27",
 		"@types/multer": "^1.4.13",

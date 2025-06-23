@@ -18,10 +18,13 @@ import { initializeStripe } from "./config/stripe";
 import { errorHandler } from "./middleware/erroHandler";
 // Routes
 import auth from "./routes/auth.routes";
-import { productRouter } from "./routes/products";
+import { productRouter } from "./routes/products.routes";
 import streamRouter from "./routes/stream.routes";
 import { userRouter } from "./routes/user.routes";
 import { logger } from "./utils/logger";
+import { paymentRouter } from "./routes/payment.routes";
+import { videoRoutes } from "./routes/video.routes";
+import { vendorRouter } from "./routes/vendor.routes";
 
 const app = new Hono();
 const io = new SocketIOServer(app as unknown as HttpServer);
@@ -60,6 +63,9 @@ app.route("/auth", auth);
 app.route("/user", userRouter);
 app.route("/product", productRouter);
 app.route("/stream", streamRouter);
+app.route("/payment", paymentRouter);
+app.route("/video", videoRoutes);
+app.route("/vendor", vendorRouter);
 
 // Initialize services
 async function initializeServices() {
@@ -70,8 +76,8 @@ async function initializeServices() {
 		await connectRedis();
 
 		// External services
-		initializeCloudinary();
-		initializeStripe();
+		await initializeCloudinary();
+		await initializeStripe();
 
 		// Socket.IO setup
 		setupSocketIO(io);
