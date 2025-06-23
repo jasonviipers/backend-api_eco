@@ -18,10 +18,11 @@ import { initializeStripe } from "./config/stripe";
 import { errorHandler } from "./middleware/erroHandler";
 // Routes
 import auth from "./routes/auth.routes";
-import { productRouter } from "./routes/products";
+import { productRouter } from "./routes/products.routes";
 import streamRouter from "./routes/stream.routes";
 import { userRouter } from "./routes/user.routes";
 import { logger } from "./utils/logger";
+import { paymentRouter } from "./routes/payment.routes";
 
 const app = new Hono();
 const io = new SocketIOServer(app as unknown as HttpServer);
@@ -60,6 +61,7 @@ app.route("/auth", auth);
 app.route("/user", userRouter);
 app.route("/product", productRouter);
 app.route("/stream", streamRouter);
+app.route("/payment", paymentRouter);
 
 // Initialize services
 async function initializeServices() {

@@ -17,3 +17,10 @@ export const initializeCloudinary = (): void => {
 };
 
 export { cloudinary };
+
+export interface CloudinaryUploadResult {
+	public_id: string;
+	secure_url: string;
+	duration?: number;
+	bytes?: number;
+}

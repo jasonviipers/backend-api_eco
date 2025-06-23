@@ -13,6 +13,7 @@
         "fluent-ffmpeg": "latest",
         "hono": "latest",
         "hono-rate-limiter": "^0.4.2",
+        "hono-upload": "^0.2.0",
         "multer": "latest",
         "node-media-server": "latest",
         "nodemailer": "latest",
@@ -247,6 +248,8 @@
     "hono": ["hono@4.8.2", "", {}, "sha512-hM+1RIn9PK1I6SiTNS6/y7O1mvg88awYLFEuEtoiMtRyT3SD2iu9pSFgbBXT3b1Ua4IwzvSTLvwO0SEhDxCi4w=="],
 
     "hono-rate-limiter": ["hono-rate-limiter@0.4.2", "", { "peerDependencies": { "hono": "^4.1.1" } }, "sha512-AAtFqgADyrmbDijcRTT/HJfwqfvhalya2Zo+MgfdrMPas3zSMD8SU03cv+ZsYwRU1swv7zgVt0shwN059yzhjw=="],
+
+    "hono-upload": ["hono-upload@0.2.0", "", { "dependencies": { "busboy": "^1.6.0" } }, "sha512-ibvVzZk5t6Jate3B9kMa9pa2UVcwAgrjkJ8BAI+Ngd5VfsFJmnLzWsktswmaREu/JBVKTK6xrE7hc8IJ4YWA+g=="],
 
     "http-errors": ["http-errors@2.0.0", "", { "dependencies": { "depd": "2.0.0", "inherits": "2.0.4", "setprototypeof": "1.2.0", "statuses": "2.0.1", "toidentifier": "1.0.1" } }, "sha512-FtwrG/euBzaEjYeRqOgly7G0qviiXoJWnvEH2Z1plBdXgbyjv34pHTSb9zoeHMyDy33+DWy5Wt9Wo+TURtOYSQ=="],
 

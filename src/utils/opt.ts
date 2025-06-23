@@ -6,3 +6,7 @@ export const generateOtp = (length: string = "6") => {
 	).join("");
 	return randomString;
 };
+
+export const validateVideoFile = (file: File): boolean => {
+	return file.type.startsWith("video/");
+};

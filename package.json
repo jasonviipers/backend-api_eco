@@ -15,6 +15,7 @@
 		"fluent-ffmpeg": "latest",
 		"hono": "latest",
 		"hono-rate-limiter": "^0.4.2",
+		"hono-upload": "^0.2.0",
 		"multer": "latest",
 		"node-media-server": "latest",
 		"nodemailer": "latest",

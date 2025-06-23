@@ -58,7 +58,7 @@ export const videoQuerySchema = z.object({
 	userId: z.string().uuid().optional(),
 	tag: z.string().optional(),
 });
-
+export type VideoQueryParams = z.infer<typeof videoQuerySchema>;
 export const createPaymentIntentSchema = z.object({
 	orderId: z.string().uuid("Invalid order ID"),
 	paymentMethodId: z.string().optional(),
