@@ -27,7 +27,7 @@ paymentRouter.post(
 	authenticateToken,
 	validateRequest({ body: createPaymentIntentSchema }),
 	asyncHandler(async (c) => {
-		const stripe = getStripe(); 
+		const stripe = getStripe();
 		const userId = c.get("user").id;
 		const { orderId, paymentMethodId, savePaymentMethod } = await c.req.json();
 
@@ -158,7 +158,7 @@ paymentRouter.post(
 	authenticateToken,
 	validateRequest({ body: confirmPaymentSchema }),
 	asyncHandler(async (c) => {
-		const stripe = getStripe(); 
+		const stripe = getStripe();
 		const userId = c.get("user").id;
 		const { paymentIntentId, paymentMethodId } = await c.req.json();
 
@@ -252,7 +252,7 @@ paymentRouter.post(
 	authenticateToken,
 	validateRequest({ body: refundSchema }),
 	asyncHandler(async (c) => {
-		const stripe = getStripe(); 
+		const stripe = getStripe();
 		const { orderId, amount, reason } = await c.req.json();
 		const userId = c.get("user").id;
 
@@ -375,7 +375,7 @@ paymentRouter.get(
 	"/methods",
 	authenticateToken,
 	asyncHandler(async (c) => {
-		const stripe = getStripe(); 
+		const stripe = getStripe();
 		const userId = c.get("user").id;
 
 		try {
@@ -423,7 +423,7 @@ paymentRouter.delete(
 	"/methods/:id",
 	authenticateToken,
 	asyncHandler(async (c) => {
-		const stripe = getStripe(); 
+		const stripe = getStripe();
 		const id = c.req.param("id");
 
 		try {
@@ -440,7 +440,7 @@ paymentRouter.delete(
 paymentRouter.post(
 	"/webhook",
 	asyncHandler(async (c) => {
-		const stripe = getStripe(); 
+		const stripe = getStripe();
 		const sig = c.req.header("stripe-signature") as string;
 		const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
 		const rawBody = await c.req.raw.arrayBuffer();

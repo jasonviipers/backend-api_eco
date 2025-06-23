@@ -24,6 +24,7 @@ import { userRouter } from "./routes/user.routes";
 import { logger } from "./utils/logger";
 import { paymentRouter } from "./routes/payment.routes";
 import { videoRoutes } from "./routes/video.routes";
+import { vendorRouter } from "./routes/vendor.routes";
 
 const app = new Hono();
 const io = new SocketIOServer(app as unknown as HttpServer);
@@ -64,6 +65,7 @@ app.route("/product", productRouter);
 app.route("/stream", streamRouter);
 app.route("/payment", paymentRouter);
 app.route("/video", videoRoutes);
+app.route("/vendor", vendorRouter);
 
 // Initialize services
 async function initializeServices() {
