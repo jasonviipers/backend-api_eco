@@ -1,64 +1,66 @@
-import type { Context, Next } from "hono"
-import { type ZodSchema, ZodError } from "zod"
-import { HTTPException } from "hono/http-exception"
+import type { Context, Next } from "hono";
+import { type ZodSchema, ZodError } from "zod";
+import { HTTPException } from "hono/http-exception";
 
 export const validateRequest = (schema: {
-  body?: ZodSchema
-  query?: ZodSchema
-  params?: ZodSchema
+	body?: ZodSchema;
+	query?: ZodSchema;
+	params?: ZodSchema;
 }) => {
-  return async (c: Context, next: Next): Promise<void> => {
-    try {
-      if (schema.body) {
-        const body = await c.req.json().catch(() => ({}))
-        const validatedBody = schema.body.parse(body)
-        c.set('validatedBody', validatedBody)
-      }
+	return async (c: Context, next: Next): Promise<void> => {
+		try {
+			if (schema.body) {
+				const body = await c.req.json().catch(() => ({}));
+				const validatedBody = schema.body.parse(body);
+				c.set("validatedBody", validatedBody);
+			}
 
-      if (schema.query) {
-        const query = Object.fromEntries(new URL(c.req.url).searchParams.entries())
-        const validatedQuery = schema.query.parse(query)
-        c.set('validatedQuery', validatedQuery)
-      }
+			if (schema.query) {
+				const query = Object.fromEntries(
+					new URL(c.req.url).searchParams.entries(),
+				);
+				const validatedQuery = schema.query.parse(query);
+				c.set("validatedQuery", validatedQuery);
+			}
 
-      if (schema.params) {
-        const params = c.req.param()
-        const validatedParams = schema.params.parse(params)
-        c.set('validatedParams', validatedParams)
-      }
+			if (schema.params) {
+				const params = c.req.param();
+				const validatedParams = schema.params.parse(params);
+				c.set("validatedParams", validatedParams);
+			}
 
-      await next()
-    } catch (error) {
-      if (error instanceof ZodError) {
-        const errorMessages = error.errors.map((err) => ({
-          field: err.path.join("."),
-          message: err.message,
-        }))
-        
-        throw new HTTPException(400, {
-          message: JSON.stringify({
-            error: "Validation failed",
-            details: errorMessages,
-          })
-        })
-      }
-      throw error
-    }
-  }
-}
+			await next();
+		} catch (error) {
+			if (error instanceof ZodError) {
+				const errorMessages = error.errors.map((err) => ({
+					field: err.path.join("."),
+					message: err.message,
+				}));
+
+				throw new HTTPException(400, {
+					message: JSON.stringify({
+						error: "Validation failed",
+						details: errorMessages,
+					}),
+				});
+			}
+			throw error;
+		}
+	};
+};
 
 // Utility functions to get validated data from context
 export const getValidatedBody = <T>(c: Context): T => {
-  return c.get('validatedBody') as T
-}
+	return c.get("validatedBody") as T;
+};
 
 export const getValidatedQuery = <T>(c: Context): T => {
-  return c.get('validatedQuery') as T
-}
+	return c.get("validatedQuery") as T;
+};
 
 export const getValidatedParams = <T>(c: Context): T => {
-  return c.get('validatedParams') as T
-}
+	return c.get("validatedParams") as T;
+};
 
 // Usage example with type safety:
 /*

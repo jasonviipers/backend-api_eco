@@ -1,38 +1,40 @@
 {
-  "name": "backend-api_eco",
-  "scripts": {
-    "dev": "bun run --hot src/server.ts",
-    "migrate": "bun run scripts/migrate.ts"
-  },
-  "dependencies": {
-    "@paralleldrive/cuid2": "^2.2.2",
-    "cassandra-driver": "latest",
-    "cloudinary": "latest",
-    "compression": "latest",
-    "dotenv": "latest",
-    "ffmpeg-static": "latest",
-    "fluent-ffmpeg": "latest",
-    "hono": "latest",
-    "hono-rate-limiter": "^0.4.2",
-    "multer": "latest",
-    "node-media-server": "latest",
-    "nodemailer": "latest",
-    "pg": "latest",
-    "pg-native": "latest",
-    "redis": "latest",
-    "socket.io": "latest",
-    "stripe": "latest",
-    "winston": "latest",
-    "zod": "^3.25.67"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "@types/compression": "^1.8.1",
-    "@types/fluent-ffmpeg": "^2.1.27",
-    "@types/multer": "^1.4.13",
-    "@types/node-media-server": "^2.3.7",
-    "@types/nodemailer": "^6.4.17",
-    "@types/pg": "^8.15.4",
-    "typescript": "^5"
-  }
+	"name": "backend-api_eco",
+	"scripts": {
+		"dev": "bun run --hot src/server.ts",
+		"migrate": "bun run scripts/migrate.ts",
+		"lint": " bunx biome format --write"
+	},
+	"dependencies": {
+		"@paralleldrive/cuid2": "^2.2.2",
+		"cassandra-driver": "latest",
+		"cloudinary": "latest",
+		"compression": "latest",
+		"dotenv": "latest",
+		"ffmpeg-static": "latest",
+		"fluent-ffmpeg": "latest",
+		"hono": "latest",
+		"hono-rate-limiter": "^0.4.2",
+		"multer": "latest",
+		"node-media-server": "latest",
+		"nodemailer": "latest",
+		"pg": "latest",
+		"pg-native": "latest",
+		"redis": "latest",
+		"socket.io": "latest",
+		"stripe": "latest",
+		"winston": "latest",
+		"zod": "^3.25.67"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "latest",
+		"@types/bun": "latest",
+		"@types/compression": "^1.8.1",
+		"@types/fluent-ffmpeg": "^2.1.27",
+		"@types/multer": "^1.4.13",
+		"@types/node-media-server": "^2.3.7",
+		"@types/nodemailer": "^6.4.17",
+		"@types/pg": "^8.15.4",
+		"typescript": "^5"
+	}
 }

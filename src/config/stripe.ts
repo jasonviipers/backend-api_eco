@@ -1,28 +1,28 @@
-import Stripe from "stripe"
-import { logger } from "../utils/logger"
+import Stripe from "stripe";
+import { logger } from "../utils/logger";
 
-let stripe: Stripe
+let stripe: Stripe;
 
 export const initializeStripe = (): void => {
-  try {
-    if (!process.env.STRIPE_SECRET_KEY) {
-      throw new Error("STRIPE_SECRET_KEY is required")
-    }
+	try {
+		if (!process.env.STRIPE_SECRET_KEY) {
+			throw new Error("STRIPE_SECRET_KEY is required");
+		}
 
-    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
-      apiVersion: "2025-05-28.basil",
-    })
+		stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+			apiVersion: "2025-05-28.basil",
+		});
 
-    logger.info("Stripe initialized successfully")
-  } catch (error) {
-    logger.error("Stripe initialization failed:", error)
-    throw error
-  }
-}
+		logger.info("Stripe initialized successfully");
+	} catch (error) {
+		logger.error("Stripe initialization failed:", error);
+		throw error;
+	}
+};
 
 export const getStripe = (): Stripe => {
-  if (!stripe) {
-    throw new Error("Stripe not initialized")
-  }
-  return stripe
-}
+	if (!stripe) {
+		throw new Error("Stripe not initialized");
+	}
+	return stripe;
+};
