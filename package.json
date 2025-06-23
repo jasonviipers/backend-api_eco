@@ -1,6 +1,8 @@
 {
 	"name": "backend-api_eco",
 	"scripts": {
+		"start": "bun run src/server.ts",
+		"build": "bun build src/server.ts --outdir dist --target node",
 		"dev": "bun run --hot src/server.ts",
 		"migrate": "bun run scripts/migrate.ts",
 		"lint": " bunx biome format --write"
