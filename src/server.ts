@@ -23,6 +23,7 @@ import { logger } from './utils/logger'
 import auth from './routes/auth.routes'
 import { userRouter } from './routes/user.routes'
 import { jwt } from 'hono/jwt'
+import { productRouter } from './routes/products'
 
 
 const app = new Hono()
@@ -56,9 +57,11 @@ app.get('/health', (c) => {
     uptime: process.uptime(),
   })
 })
+
 // API Routes
 app.route('/auth', auth)
 app.route('/user', userRouter)
+app.route('/product', productRouter)
 
 // Initialize services
 async function initializeServices() {

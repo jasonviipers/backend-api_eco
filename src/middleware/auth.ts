@@ -4,6 +4,14 @@ import { verify } from "hono/jwt"
 import { query } from "../config/postgresql"
 import { logger } from "../utils/logger"
 
+type AuthVariables = {
+    user?: {
+        id: string
+        email: string
+        role: string
+        vendorId?: string
+    }
+}
 
 export const authenticateToken = async (c: Context, next: Next) => {
     try {
@@ -42,3 +50,39 @@ export const authenticateToken = async (c: Context, next: Next) => {
     }
 }
 
+export const requireRole = (roles: string[]) => {
+    return async (c: Context<{ Variables: AuthVariables }>, next: () => Promise<void>): Promise<void | Response> => {
+        const user = c.get('user')
+        if (!user) {
+            return c.json({ error: 'Authentication required' }, 401)
+        }
+
+        if (!roles.includes(user.role)) {
+            return c.json({ error: 'Insufficient permissions' }, 403)
+        }
+
+        await next()
+    }
+}
+
+export const requireVendor = async (c: Context<{ Variables: AuthVariables }>, next: () => Promise<void>): Promise<void | Response> => {
+    const user = c.get('user')
+    if (!user || user.role !== 'vendor') {
+        return c.json({ error: 'Vendor access required' }, 403)
+    }
+
+    if (!user.vendorId) {
+        return c.json({ error: 'Vendor profile not found' }, 403)
+    }
+
+    await next()
+}
+
+export const requireAdmin = async (c: Context<{ Variables: AuthVariables }>, next: () => Promise<void>): Promise<void | Response> => {
+    const user = c.get('user')
+    if (!user || user.role !== 'admin') {
+        return c.json({ error: 'Admin access required' }, 403)
+    }
+
+    await next()
+}
