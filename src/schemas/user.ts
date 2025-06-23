@@ -58,3 +58,20 @@ export const videoQuerySchema = z.object({
 	userId: z.string().uuid().optional(),
 	tag: z.string().optional(),
 });
+
+export const createPaymentIntentSchema = z.object({
+	orderId: z.string().uuid("Invalid order ID"),
+	paymentMethodId: z.string().optional(),
+	savePaymentMethod: z.boolean().default(false),
+});
+
+export const confirmPaymentSchema = z.object({
+	paymentIntentId: z.string().min(1, "Payment intent ID is required"),
+	paymentMethodId: z.string().optional(),
+});
+
+export const refundSchema = z.object({
+	orderId: z.string().uuid("Invalid order ID"),
+	amount: z.number().positive("Refund amount must be positive").optional(),
+	reason: z.string().optional(),
+});
