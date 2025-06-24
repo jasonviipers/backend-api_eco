@@ -21,7 +21,6 @@
 		"node-media-server": "latest",
 		"nodemailer": "latest",
 		"pg": "latest",
-		"pg-native": "latest",
 		"redis": "latest",
 		"socket.io": "latest",
 		"stripe": "latest",
