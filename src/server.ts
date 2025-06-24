@@ -1,94 +1,50 @@
-import type { Server as HttpServer } from "node:http";
-import dotenv from "dotenv";
-import { Hono } from "hono";
-import { compress } from "hono/compress";
-import { cors } from "hono/cors";
-import { poweredBy } from "hono/powered-by";
-import { secureHeaders } from "hono/secure-headers";
-import { rateLimiter } from "hono-rate-limiter";
-import { Server as SocketIOServer } from "socket.io";
-import { connectCassandra } from "./config/cassandra";
-import { initializeCloudinary } from "./config/cloudinary";
-import { setupMediaServer } from "./config/mediaServer";
-// Import configurations and middleware
-import { connectPostgreSQL } from "./config/postgresql";
-import { connectRedis } from "./config/redis";
-import { setupSocketIO } from "./config/socket";
-import { initializeStripe } from "./config/stripe";
-import { errorHandler } from "./middleware/erroHandler";
-// Routes
-import auth from "./routes/auth.routes";
-import { productRouter } from "./routes/products.routes";
-import streamRouter from "./routes/stream.routes";
-import { userRouter } from "./routes/user.routes";
-import { logger } from "./utils/logger";
-import { paymentRouter } from "./routes/payment.routes";
-import { videoRoutes } from "./routes/video.routes";
-import { vendorRouter } from "./routes/vendor.routes";
+import dotenv from 'dotenv'
+import { Hono } from 'hono'
+import { Server as HttpServer } from 'node:http'
+import { Server as SocketIOServer } from 'socket.io'
+import { setupSocketIO } from './config/socket'
+import { registerGlobalMiddleware } from './server/middleware'
+import { registerRoutes } from './server/routes'
+import { registerErrorHandlers } from './server/errors'
+import { logger } from './utils/logger'
+import { connectPostgreSQL } from './config/postgresql'
+import { connectRedis } from './config/redis'
+import { initializeCloudinary } from './config/cloudinary'
+import { initializeStripe } from './config/stripe'
+import { setupMediaServer } from './config/mediaServer'
+import { connectCassandra } from './config/cassandra'
 
-const app = new Hono();
-const io = new SocketIOServer(app as unknown as HttpServer);
+dotenv.config()
+const app = new Hono()
+const io = new SocketIOServer(app as unknown as HttpServer)
 
-// Middleware
-app.use("*", poweredBy());
-app.use("*", secureHeaders());
-// app.use('*', compress())
-app.use(
-	"*",
-	cors({
-		origin: process.env.CLIENT_URL || "http://localhost:3000",
-		credentials: true,
-	}),
-);
-// app.use('*', limiter)
-app.use("*", async (c, next) => {
-	if (c.req.method === "POST" || c.req.method === "PUT") {
-		const body = await c.req.json();
-		c.req.addValidatedData("json", body);
-	}
-	await next();
-});
+registerGlobalMiddleware(app)
+registerRoutes(app)
+registerErrorHandlers(app)
 
-// Health check endpoint
-app.get("/health", (c) => {
-	return c.json({
-		status: "OK",
-		timestamp: new Date().toISOString(),
-		uptime: process.uptime(),
-	});
-});
-
-// API Routes
-app.route("/auth", auth);
-app.route("/user", userRouter);
-app.route("/product", productRouter);
-app.route("/stream", streamRouter);
-app.route("/payment", paymentRouter);
-app.route("/video", videoRoutes);
-app.route("/vendor", vendorRouter);
-
-// Initialize services
-async function initializeServices() {
+async function initServices() {
 	try {
-		// Database connections
-		await connectPostgreSQL();
-		// await connectCassandra()
-		await connectRedis();
-
-		// External services
-		await initializeCloudinary();
-		await initializeStripe();
-
-		// Socket.IO setup
-		setupSocketIO(io);
-
-		logger.info("All services initialized successfully");
-	} catch (error) {
-		logger.error("Failed to initialize services:", error);
-		process.exit(1);
+		logger.info('Initializing services...')
+		await Promise.all([connectPostgreSQL(), connectRedis(), connectCassandra()])
+		await Promise.all([initializeCloudinary(), initializeStripe()])
+		setupMediaServer()
+		setupSocketIO(io)
+		logger.info('All services initialized successfully')
+	} catch (err) {
+		logger.error('Failed to initialize services:', err)
+		process.exit(1)
 	}
 }
 
-await initializeServices();
+await initServices()
 
-export default app;
+const port = Number(process.env.PORT) || 3000
+Bun.serve({
+	port,
+	fetch: app.fetch,
+	error(error) {
+		logger.error('Server error:', error)
+		return new Response('Internal Server Error', { status: 500 })
+	},
+})
+logger.info(`Server running on port ${port}`)

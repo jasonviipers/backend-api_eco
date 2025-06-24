@@ -166,7 +166,7 @@ vendorRouter.get(
       SELECT 
         v.id, v.business_name, v.description, v.logo_url, v.rating,
         v.total_sales, v.follower_count, v.created_at,
-        u.first_name, u.last_name
+        u.full_name, u.email,
       FROM vendors v
       JOIN users u ON v.user_id = u.id
       ${whereClause}
@@ -222,7 +222,7 @@ vendorRouter.get(
 			`
       SELECT 
         v.*, 
-        u.first_name, u.last_name, u.email
+        u.full_name, u.email
       FROM vendors v
       JOIN users u ON v.user_id = u.id
       WHERE v.id = $1 AND v.status = 'approved'
@@ -311,7 +311,7 @@ vendorRouter.get(
 			`
       SELECT 
         o.id, o.order_number, o.status, o.total_amount, o.created_at,
-        u.first_name, u.last_name
+        u.full_name
       FROM orders o
       JOIN order_items oi ON o.id = oi.order_id
       JOIN users u ON o.user_id = u.id
