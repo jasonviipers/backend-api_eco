@@ -2,9 +2,9 @@ services:
   app:
     build: .
     ports:
-      - "5000:5000"
-      - "1935:1935"
-      - "8000:8000"
+      - "5000:5000" # HTTP API
+      - "1935:1935" # RTMP
+      - "8000:8000" # HLS/DASH
     environment:
       - NODE_ENV=production
       - POSTGRES_HOST=postgres
@@ -18,14 +18,15 @@ services:
       redis:
         condition: service_started
     volumes:
-      - ./logs:/app/logs
+      - app_logs:/app/logs
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      test: ["CMD-SHELL", "curl -f http://localhost:5000/health || exit 0"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    user: "1001"
 
   postgres:
     image: postgres:15-alpine
@@ -88,3 +89,4 @@ volumes:
   postgres_data:
   cassandra_data:
   redis_data:
+  app_logs:
