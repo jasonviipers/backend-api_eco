@@ -219,7 +219,7 @@ export const vendorStatusUpdateEmail = (
       
       ${statusInfo.message}
       
-      Business: ${vendor.businessName}
+      Business: ${vendor.businessName}b
       
       ${
 				reason

@@ -29,7 +29,8 @@ auth.post(
 		return parsed.data;
 	}),
 	async (c) => {
-		const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '';
+		const ip =
+			c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "";
 		const rateLimitResult = await loginRateLimit(ip);
 		if (!rateLimitResult.ok) {
 			logger.error("Rate limit error:", rateLimitResult.error);
@@ -38,8 +39,8 @@ auth.post(
 		if (!rateLimitResult.value.allowed) {
 			return c.json({
 				error: "Too many register attempts. Please try again later.",
-				resetTime: rateLimitResult.value.resetTime
-			})
+				resetTime: rateLimitResult.value.resetTime,
+			});
 		}
 		const { email, password, full_name, phone, role } = c.req.valid("json");
 		const existingUser = await query("SELECT * FROM users WHERE email = $1", [
@@ -93,7 +94,8 @@ auth.post(
 		return parsed.data;
 	}),
 	async (c) => {
-		const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '';
+		const ip =
+			c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "";
 		const rateLimitResult = await loginRateLimit(ip);
 
 		if (!rateLimitResult.ok) {
@@ -102,10 +104,13 @@ auth.post(
 		}
 
 		if (!rateLimitResult.value.allowed) {
-			return c.json({
-				error: "Too many login attempts. Please try again later.",
-				resetTime: rateLimitResult.value.resetTime
-			}, 429);
+			return c.json(
+				{
+					error: "Too many login attempts. Please try again later.",
+					resetTime: rateLimitResult.value.resetTime,
+				},
+				429,
+			);
 		}
 		const { email, password } = c.req.valid("json");
 
@@ -259,10 +264,13 @@ auth.post(
 		}
 
 		if (!rateLimitResult.value.allowed) {
-			return c.json({
-				error: "Too many password reset requests. Please try again later.",
-				resetTime: rateLimitResult.value.resetTime
-			}, 429);
+			return c.json(
+				{
+					error: "Too many password reset requests. Please try again later.",
+					resetTime: rateLimitResult.value.resetTime,
+				},
+				429,
+			);
 		}
 		const userResult = await query(
 			"SELECT id, full_name FROM users WHERE email = $1",
@@ -300,18 +308,22 @@ auth.post(
 		return parsed.data;
 	}),
 	async (c) => {
-		const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '';
+		const ip =
+			c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "";
 		const rateLimitResult = await loginRateLimit(ip);
 
 		if (!rateLimitResult.ok) {
 			logger.error("Rate limit error:", rateLimitResult.error);
-			return c.json({ error: "Internal server error" }, 500);		
+			return c.json({ error: "Internal server error" }, 500);
 		}
 		if (!rateLimitResult.value.allowed) {
-			return c.json({
-				error: "Too many password reset attempts. Please try again later.",
-				resetTime: rateLimitResult.value.resetTime
-			}, 429);
+			return c.json(
+				{
+					error: "Too many password reset attempts. Please try again later.",
+					resetTime: rateLimitResult.value.resetTime,
+				},
+				429,
+			);
 		}
 		const { token, password } = c.req.valid("json");
 
