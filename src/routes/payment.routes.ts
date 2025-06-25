@@ -9,7 +9,7 @@ import {
 } from "../schemas/user";
 import { validateRequest } from "../middleware/validation";
 import { asyncHandler } from "../middleware/erroHandler";
-import { sendEmail, sendOrderConfirmation } from "../utils/email";
+import { sendEmail, sendOrderConfirmation } from "../email/email";
 import { getStripe } from "../config/stripe";
 
 type Variables = {

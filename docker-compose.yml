@@ -1,3 +1,5 @@
+version: '3.8'
+
 services:
   app:
     build: .
@@ -6,17 +8,19 @@ services:
       - "1935:1935" # RTMP
       - "8000:8000" # HLS/DASH
     environment:
-      - NODE_ENV=production
-      - POSTGRES_HOST=postgres
-      - CASSANDRA_HOST=cassandra
-      - REDIS_URL=redis://redis:6379
+      - NODE_ENV=${NODE_ENV}
+      - POSTGRES_HOST=${POSTGRES_HOST}
+      - CASSANDRA_HOST=${CASSANDRA_HOST}
+      - CASSANDRA_DATACENTER=${CASSANDRA_DATACENTER}
+      - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE}
+      - REDIS_URL=${REDIS_URL}
     depends_on:
       postgres:
         condition: service_healthy
       cassandra:
-        condition: service_started
+        condition: service_healthy
       redis:
-        condition: service_started
+        condition: service_healthy
     volumes:
       - app_logs:/app/logs
     restart: unless-stopped
@@ -31,14 +35,14 @@ services:
   postgres:
     image: postgres:15-alpine
     environment:
-      - POSTGRES_DB=ecommerce_platform
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./scripts/postgresql-schema.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./src/db/postgresql-schema.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -52,13 +56,25 @@ services:
       - CASSANDRA_CLUSTER_NAME=ecommerce_cluster
       - CASSANDRA_DC=datacenter1
       - CASSANDRA_RACK=rack1
+      - CASSANDRA_KEYSPACE=ecommerce_analytics
       - MAX_HEAP_SIZE=512M
       - HEAP_NEWSIZE=100M
+      - CASSANDRA_NUM_TOKENS=16
+      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
     ports:
       - "9042:9042"
+      - "7000:7000" # internode communication
+      - "7001:7001" # TLS internode
+      - "7199:7199" # JMX
     volumes:
       - cassandra_data:/var/lib/cassandra
-      - ./scripts/cassandra-schema.cql:/docker-entrypoint-initdb.d/init.cql
+      - ./src/db/cassandra-schema.cql:/docker-entrypoint-initdb.d/init.cql
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh -u cassandra -p cassandra -e 'DESCRIBE KEYSPACES' || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
     restart: unless-stopped
 
   redis:
@@ -68,6 +84,11 @@ services:
     volumes:
       - redis_data:/data
     command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     restart: unless-stopped
 
   nginx:
