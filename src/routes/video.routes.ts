@@ -336,14 +336,13 @@ videoRoutes.post(
 
 		// Get user info for response
 		const userResult = await query(
-			"SELECT first_name, last_name FROM users WHERE id = $1",
+			"SELECT full_name FROM users WHERE id = $1",
 			[userId],
 		);
 
 		const newComment = {
 			...commentResult.rows[0],
-			first_name: userResult.rows[0].first_name,
-			last_name: userResult.rows[0].last_name,
+			full_name: userResult.rows[0].full_name,
 		};
 
 		return c.json(

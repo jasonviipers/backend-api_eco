@@ -10,6 +10,7 @@ import {
 	changePasswordSchema,
 	updateProfileSchema,
 } from "../schemas/user";
+import { EmailService } from "../email/email.service";
 
 export const userRouter = new Hono();
 userRouter
@@ -161,16 +162,13 @@ userRouter.put(
 			"SELECT email, full_name FROM users WHERE id = $1",
 			[userId],
 		);
-		// await sendEmail({
-		//   to: userInfo.rows[0].email,
-		//   subject: 'Password Changed Successfully',
-		//   html: `
-		//     <h1>Password Changed</h1>
-		//     <p>Hi ${userInfo.rows[0].first_name},</p>
-		//     <p>Your password has been successfully changed.</p>
-		//     <p>If you didn't make this change, please contact support immediately.</p>
-		//   `,
-		// })
+
+		await EmailService.sendPasswordChangeConfirmationEmail(
+			{
+				name: userInfo.rows[0].full_name,
+				email: userInfo.rows[0].email,
+			}
+		);
 
 		return c.json({ message: "Password changed successfully" });
 	}),

@@ -193,3 +193,98 @@ export const passwordResetConfirmationEmail = (
     If you need assistance, please contact our support team at ${emailConfig.supportEmail}.
   `,
 });
+
+// Password Reset Confirmation Email
+export const passwordChangeConfirmationEmail = (
+  user: { name: string; email: string },
+) => ({
+  to: user.email,
+  subject: `Password Changed Successfully - ${emailConfig.appName}`,
+  html: `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #10B981; padding: 20px; text-align: center; color: white; }
+        .content { padding: 20px; background-color: #f9f9f9; }
+        .success-container { 
+          background-color: white; 
+          padding: 20px; 
+          margin: 20px 0; 
+          text-align: center; 
+          border-radius: 8px;
+          border: 2px solid #10B981;
+        }
+        .success-icon { 
+          font-size: 48px; 
+          color: #10B981; 
+          margin-bottom: 15px;
+        }
+        .security-note { 
+          background-color: #ECFDF5; 
+          padding: 15px; 
+          border-left: 4px solid #10B981; 
+          margin: 20px 0; 
+        }
+        .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #666; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Password Changed Successfully</h1>
+        </div>
+        <div class="content">
+          <p>Hello ${user.name},</p>
+          <p>Your password for ${emailConfig.appName} has been successfully changed.</p>
+          
+          <div class="success-container">
+            <div class="success-icon">✓</div>
+            <h2>Password Change Confirmed</h2>
+            <p>You can now log in with your new password.</p>
+          </div>
+          
+          <div class="security-note">
+            <p><strong>Security Notice:</strong></p>
+            <ul>
+              <li>This change was made at ${new Date().toLocaleString()}</li>
+              <li>All active sessions have been terminated for security</li>
+              <li>If you didn't make this change, please contact us immediately</li>
+            </ul>
+          </div>
+          
+          <p>Best regards,<br/>The ${emailConfig.appName} Team</p>
+        </div>
+        <div class="footer">
+          <p>© ${new Date().getFullYear()} ${emailConfig.appName}. All rights reserved.</p>
+          <p>If you need assistance, please contact <a href="mailto:${emailConfig.supportEmail}">our support team</a>.</p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `,
+  text: `
+    Password Changed Successfully
+    
+    Hello ${user.name},
+    
+    Your password for ${emailConfig.appName} has been successfully changed.
+    
+    Password Change Confirmed
+    ✓ You can now log in with your new password.
+    
+    SECURITY NOTICE:
+    - This change was made at ${new Date().toLocaleString()}
+    - All active sessions have been terminated for security
+    - If you didn't make this change, please contact us immediately
+    
+    Best regards,
+    The ${emailConfig.appName} Team
+    
+    ---
+    © ${new Date().getFullYear()} ${emailConfig.appName}. All rights reserved.
+    If you need assistance, please contact our support team at ${emailConfig.supportEmail}.
+  `,
+});

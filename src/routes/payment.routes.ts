@@ -9,8 +9,8 @@ import {
 } from "../schemas/user";
 import { validateRequest } from "../middleware/validation";
 import { asyncHandler } from "../middleware/erroHandler";
-import { sendEmail, sendOrderConfirmation } from "../email/email";
 import { getStripe } from "../config/stripe";
+import { EmailService } from "../email/email.service";
 
 type Variables = {
 	user?: {
@@ -154,220 +154,239 @@ paymentRouter.post(
 );
 
 paymentRouter.post(
-	"/confirm",
-	authenticateToken,
-	validateRequest({ body: confirmPaymentSchema }),
-	asyncHandler(async (c) => {
-		const stripe = getStripe();
-		const userId = c.get("user").id;
-		const { paymentIntentId, paymentMethodId } = await c.req.json();
+    "/confirm",
+    authenticateToken,
+    validateRequest({ body: confirmPaymentSchema }),
+    asyncHandler(async (c) => {
+        const stripe = getStripe();
+        const userId = c.get("user").id;
+        const { paymentIntentId, paymentMethodId } = await c.req.json();
 
-		try {
-			let paymentIntent;
+        try {
+            let paymentIntent;
 
-			if (paymentMethodId) {
-				// Confirm with payment method
-				paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
-					payment_method: paymentMethodId,
-				});
-			} else {
-				// Retrieve payment intent status
-				paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-			}
+            if (paymentMethodId) {
+                // Confirm with payment method
+                paymentIntent = await stripe.paymentIntents.confirm(paymentIntentId, {
+                    payment_method: paymentMethodId,
+                });
+            } else {
+                // Retrieve payment intent status
+                paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+            }
 
-			// Update payment status in database
-			await query(
-				"UPDATE payments SET status = $1, updated_at = $2 WHERE stripe_payment_intent_id = $3",
-				[paymentIntent.status, new Date(), paymentIntentId],
-			);
+            // Update payment status in database
+            await query(
+                "UPDATE payments SET status = $1, updated_at = $2 WHERE stripe_payment_intent_id = $3",
+                [paymentIntent.status, new Date(), paymentIntentId],
+            );
 
-			if (paymentIntent.status === "succeeded") {
-				// Get order details
-				const orderResult = await query(
-					`
-            SELECT o.*, p.order_id
-            FROM orders o
-            JOIN payments p ON o.id = p.order_id
-            WHERE p.stripe_payment_intent_id = $1
-          `,
-					[paymentIntentId],
-				);
+            if (paymentIntent.status === "succeeded") {
+                // Get order details
+                const orderResult = await query(
+                    `
+                    SELECT o.*, p.order_id
+                    FROM orders o
+                    JOIN payments p ON o.id = p.order_id
+                    WHERE p.stripe_payment_intent_id = $1
+                    `,
+                    [paymentIntentId],
+                );
 
-				if (orderResult.rows.length > 0) {
-					const order = orderResult.rows[0];
+                if (orderResult.rows.length > 0) {
+                    const order = orderResult.rows[0];
 
-					// Update order status
-					await query(
-						"UPDATE orders SET payment_status = $1, status = $2, updated_at = $3 WHERE id = $4",
-						["completed", "confirmed", new Date(), order.id],
-					);
+                    // Update order status
+                    await query(
+                        "UPDATE orders SET payment_status = $1, status = $2, updated_at = $3 WHERE id = $4",
+                        ["completed", "confirmed", new Date(), order.id],
+                    );
 
-					// Update product inventory
-					await query(
-						`
-              UPDATE products 
-              SET inventory = inventory - oi.quantity
-              FROM order_items oi
-              WHERE products.id = oi.product_id AND oi.order_id = $1
-            `,
-						[order.id],
-					);
+                    // Update product inventory
+                    await query(
+                        `
+                        UPDATE products 
+                        SET inventory = inventory - oi.quantity
+                        FROM order_items oi
+                        WHERE products.id = oi.product_id AND oi.order_id = $1
+                        `,
+                        [order.id],
+                    );
 
-					// Send order confirmation email
-					await sendOrderConfirmation(c.get("user").email, {
-						orderNumber: order.order_number,
-						total: order.total_amount,
-					});
+                    // Get order items with product names for the email
+                    const orderItemsResult = await query(
+                        `
+                        SELECT p.name as product_name, oi.quantity, oi.unit_price
+                        FROM order_items oi
+                        JOIN products p ON oi.product_id = p.id
+                        WHERE oi.order_id = $1
+                        `,
+                        [order.id]
+                    );
 
-					// Create notification
-					await query(
-						"INSERT INTO notifications (user_id, type, title, message, data) VALUES ($1, $2, $3, $4, $5)",
-						[
-							userId,
-							"order_confirmed",
-							"Order Confirmed",
-							`Your order #${order.order_number} has been confirmed and payment processed.`,
-							JSON.stringify({
-								orderId: order.id,
-								orderNumber: order.order_number,
-							}),
-						],
-					);
-				}
-			}
+                    // Send order confirmation email
+                    await EmailService.sendOrderConfirmation(
+                        {
+                            name: c.get("user").full_name,
+                            email: c.get("user").email
+                        },
+                        {
+                            orderNumber: order.order_number,
+                            total: Number(order.total_amount),
+                            items: orderItemsResult.rows
+                        }
+                    );
 
-			return c.json({
-				status: paymentIntent.status,
-				paymentIntentId: paymentIntent.id,
-			});
-		} catch (error) {
-			logger.error("Payment confirmation failed:", error);
-			return c.json({ error: "Failed to confirm payment" }, 500);
-		}
-	}),
+                    // Create notification
+                    await query(
+                        "INSERT INTO notifications (user_id, type, title, message, data) VALUES ($1, $2, $3, $4, $5)",
+                        [
+                            userId,
+                            "order_confirmed",
+                            "Order Confirmed",
+                            `Your order #${order.order_number} has been confirmed and payment processed.`,
+                            JSON.stringify({
+                                orderId: order.id,
+                                orderNumber: order.order_number,
+                            }),
+                        ],
+                    );
+                }
+            }
+
+            return c.json({
+                status: paymentIntent.status,
+                paymentIntentId: paymentIntent.id,
+            });
+        } catch (error) {
+            logger.error("Payment confirmation failed:", error);
+            return c.json({ error: "Failed to confirm payment" }, 500);
+        }
+    }),
 );
 
 paymentRouter.post(
-	"/refund",
-	authenticateToken,
-	validateRequest({ body: refundSchema }),
-	asyncHandler(async (c) => {
-		const stripe = getStripe();
-		const { orderId, amount, reason } = await c.req.json();
-		const userId = c.get("user").id;
+    "/refund",
+    authenticateToken,
+    validateRequest({ body: refundSchema }),
+    asyncHandler(async (c) => {
+        const stripe = getStripe();
+        const { orderId, amount, reason } = await c.req.json();
+        const userId = c.get("user").id;
 
-		// Get order and payment details
-		const orderResult = await query(
-			`
-        SELECT 
-          o.*, p.stripe_payment_intent_id, p.amount as payment_amount
-        FROM orders o
-        JOIN payments p ON o.id = p.order_id
-        WHERE o.id = $1 AND (o.user_id = $2 OR $3 = ANY(SELECT role FROM users WHERE id = $2))
-      `,
-			[orderId, userId, "admin"],
-		);
+        // Get order and payment details
+        const orderResult = await query(
+            `
+            SELECT 
+              o.*, p.stripe_payment_intent_id, p.amount as payment_amount
+            FROM orders o
+            JOIN payments p ON o.id = p.order_id
+            WHERE o.id = $1 AND (o.user_id = $2 OR $3 = ANY(SELECT role FROM users WHERE id = $2))
+            `,
+            [orderId, userId, "admin"],
+        );
 
-		if (orderResult.rows.length === 0) {
-			return c.json({ error: "Order not found or access denied" }, 404);
-		}
+        if (orderResult.rows.length === 0) {
+            return c.json({ error: "Order not found or access denied" }, 404);
+        }
 
-		const order = orderResult.rows[0];
+        const order = orderResult.rows[0];
 
-		if (order.payment_status !== "completed") {
-			return c.json({ error: "Order payment is not completed" }, 400);
-		}
+        if (order.payment_status !== "completed") {
+            return c.json({ error: "Order payment is not completed" }, 400);
+        }
 
-		try {
-			// Calculate refund amount
-			const refundAmount = amount
-				? Math.round(amount * 100)
-				: Math.round(Number.parseFloat(order.payment_amount) * 100);
+        try {
+            // Calculate refund amount
+            const refundAmount = amount
+                ? Math.round(amount * 100)
+                : Math.round(Number.parseFloat(order.payment_amount) * 100);
 
-			// Create refund in Stripe
-			const refund = await stripe.refunds.create({
-				payment_intent: order.stripe_payment_intent_id,
-				amount: refundAmount,
-				reason: reason || "requested_by_customer",
-				metadata: {
-					orderId: order.id,
-					userId: userId,
-				},
-			});
+            // Create refund in Stripe
+            const refund = await stripe.refunds.create({
+                payment_intent: order.stripe_payment_intent_id,
+                amount: refundAmount,
+                reason: reason || "requested_by_customer",
+                metadata: {
+                    orderId: order.id,
+                    userId: userId,
+                },
+            });
 
-			// Update order status
-			await query(
-				"UPDATE orders SET status = $1, payment_status = $2, updated_at = $3 WHERE id = $4",
-				["refunded", "refunded", new Date(), orderId],
-			);
+            // Update order status
+            await query(
+                "UPDATE orders SET status = $1, payment_status = $2, updated_at = $3 WHERE id = $4",
+                ["refunded", "refunded", new Date(), orderId],
+            );
 
-			// Create refund record
-			await query(
-				`
-          INSERT INTO refunds (order_id, stripe_refund_id, amount, reason, status, processed_by)
-          VALUES ($1, $2, $3, $4, $5, $6)
-        `,
-				[orderId, refund.id, refundAmount / 100, reason, refund.status, userId],
-			);
+            // Create refund record
+            await query(
+                `
+                INSERT INTO refunds (order_id, stripe_refund_id, amount, reason, status, processed_by)
+                VALUES ($1, $2, $3, $4, $5, $6)
+                `,
+                [orderId, refund.id, refundAmount / 100, reason, refund.status, userId],
+            );
 
-			// Restore product inventory
-			await query(
-				`
-          UPDATE products 
-          SET inventory = inventory + oi.quantity
-          FROM order_items oi
-          WHERE products.id = oi.product_id AND oi.order_id = $1
-        `,
-				[orderId],
-			);
+            // Restore product inventory
+            await query(
+                `
+                UPDATE products 
+                SET inventory = inventory + oi.quantity
+                FROM order_items oi
+                WHERE products.id = oi.product_id AND oi.order_id = $1
+                `,
+                [orderId],
+            );
 
-			// Send refund notification email
-			const userResult = await query(
-				"SELECT email, first_name FROM users WHERE id = $1",
-				[order.user_id],
-			);
-			const user = userResult.rows[0];
+            // Get user details for notification
+            const userResult = await query(
+                "SELECT email, full_name FROM users WHERE id = $1",
+                [order.user_id],
+            );
+            const user = userResult.rows[0];
 
-			await sendEmail({
-				to: user.email,
-				subject: `Refund Processed - Order #${order.order_number}`,
-				html: `
-            <h1>Refund Processed</h1>
-            <p>Hi ${user.first_name},</p>
-            <p>Your refund for order #${order.order_number} has been processed.</p>
-            <p>Refund Amount: $${(refundAmount / 100).toFixed(2)}</p>
-            <p>The refund will appear in your account within 5-10 business days.</p>
-          `,
-			});
+            // Send refund notification email
+            await EmailService.sendRefundNotification(
+                {
+                    name: user.full_name,
+                    email: user.email
+                },
+                {
+                    orderNumber: order.order_number,
+                    amount: refundAmount / 100,
+                    reason: reason
+                }
+            );
 
-			// Create notification
-			await query(
-				"INSERT INTO notifications (user_id, type, title, message, data) VALUES ($1, $2, $3, $4, $5)",
-				[
-					order.user_id,
-					"refund_processed",
-					"Refund Processed",
-					`Your refund for order #${order.order_number} has been processed.`,
-					JSON.stringify({
-						orderId: order.id,
-						refundAmount: refundAmount / 100,
-					}),
-				],
-			);
+            // Create notification
+            await query(
+                "INSERT INTO notifications (user_id, type, title, message, data) VALUES ($1, $2, $3, $4, $5)",
+                [
+                    order.user_id,
+                    "refund_processed",
+                    "Refund Processed",
+                    `Your refund for order #${order.order_number} has been processed.`,
+                    JSON.stringify({
+                        orderId: order.id,
+                        refundAmount: refundAmount / 100,
+                    }),
+                ],
+            );
 
-			return c.json({
-				message: "Refund processed successfully",
-				refund: {
-					id: refund.id,
-					amount: refundAmount / 100,
-					status: refund.status,
-				},
-			});
-		} catch (error) {
-			logger.error("Refund processing failed:", error);
-			return c.json({ error: "Failed to process refund" }, 500);
-		}
-	}),
+            return c.json({
+                message: "Refund processed successfully",
+                refund: {
+                    id: refund.id,
+                    amount: refundAmount / 100,
+                    status: refund.status,
+                },
+            });
+        } catch (error) {
+            logger.error("Refund processing failed:", error);
+            return c.json({ error: "Failed to process refund" }, 500);
+        }
+    }),
 );
 
 // Get payment methods
@@ -403,11 +422,11 @@ paymentRouter.get(
 					type: pm.type,
 					card: pm.card
 						? {
-								brand: pm.card.brand,
-								last4: pm.card.last4,
-								expMonth: pm.card.exp_month,
-								expYear: pm.card.exp_year,
-							}
+							brand: pm.card.brand,
+							last4: pm.card.last4,
+							expMonth: pm.card.exp_month,
+							expYear: pm.card.exp_year,
+						}
 						: null,
 				})),
 			});

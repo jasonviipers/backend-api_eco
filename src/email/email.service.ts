@@ -1,5 +1,6 @@
 import { emailConfig, emailTransporter } from "./email";
-import { passwordResetConfirmationEmail, passwordResetEmailWithOTP } from "./templates/passwordReset";
+import { orderConfirmationEmail, orderShippedEmail, refundNotificationEmail } from "./templates/order";
+import { passwordChangeConfirmationEmail, passwordResetConfirmationEmail, passwordResetEmailWithOTP } from "./templates/passwordReset";
 import { vendorPayoutNotificationEmail, vendorRegistrationConfirmationEmail, vendorStatusUpdateEmail } from "./templates/vendor";
 import { welcomeEmailWithOTP } from "./templates/welcome";
 
@@ -49,6 +50,37 @@ export class EmailService {
         payout: { amount: number; status: string; payoutId: string }
     ) {
         const email = vendorPayoutNotificationEmail(vendor, payout);
+        return this.sendEmail(email);
+    }
+
+    static async sendOrderConfirmation(
+        user: { name: string; email: string },
+        order: { orderNumber: string; total: number; items: any[] }
+    ) {
+        const email = orderConfirmationEmail(user, order);
+        return this.sendEmail(email);
+    }
+
+    static async sendOrderShippedNotification(
+        user: { name: string; email: string },
+        order: { orderNumber: string; trackingNumber?: string; carrier?: string }
+    ) {
+        const email = orderShippedEmail(user, order);
+        return this.sendEmail(email);
+    }
+
+    static async sendRefundNotification(
+        user: { name: string; email: string },
+        refund: { orderNumber: string; amount: number; reason?: string }
+    ) {
+        const email = refundNotificationEmail(user, refund);
+        return this.sendEmail(email);
+    }
+
+    static async sendPasswordChangeConfirmationEmail(
+        user: { name: string; email: string },
+    ) {
+        const email = passwordChangeConfirmationEmail(user);
         return this.sendEmail(email);
     }
 

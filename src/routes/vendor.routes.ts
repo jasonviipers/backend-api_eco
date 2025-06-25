@@ -721,7 +721,7 @@ vendorRouter.put(
 
 		// Get vendor user info for notification
 		const userResult = await query(
-			"SELECT email, first_name FROM users WHERE id = $1",
+			"SELECT email, full_name FROM users WHERE id = $1",
 			[vendor.user_id],
 		);
 		const user = userResult.rows[0];
@@ -734,7 +734,7 @@ vendorRouter.put(
 		};
 		await EmailService.sendVendorStatusUpdate(
 			{
-				name: user.first_name,
+				name: user.full_name,
 				email: user.email,
 				businessName: vendor.business_name
 			},
