@@ -29,6 +29,18 @@ auth.post(
 		return parsed.data;
 	}),
 	async (c) => {
+		const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '';
+		const rateLimitResult = await loginRateLimit(ip);
+		if (!rateLimitResult.ok) {
+			logger.error("Rate limit error:", rateLimitResult.error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+		if (!rateLimitResult.value.allowed) {
+			return c.json({
+				error: "Too many register attempts. Please try again later.",
+				resetTime: rateLimitResult.value.resetTime
+			})
+		}
 		const { email, password, full_name, phone, role } = c.req.valid("json");
 		const existingUser = await query("SELECT * FROM users WHERE email = $1", [
 			email,
@@ -37,11 +49,11 @@ auth.post(
 			return c.json({ error: "Please enter a valid email" }, 409);
 		}
 		const hashedPassword = await Bun.password.hash(password);
-		const verificationToken = generateOtp();
+		const verificationOTP = generateOtp();
 		const newUser = await query(
 			`INSERT INTO users (email, password, full_name, phone, role, verification_token, is_active)
       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, email, full_name, role`,
-			[email, hashedPassword, full_name, phone, role, verificationToken, false],
+			[email, hashedPassword, full_name, phone, role, verificationOTP, false],
 		);
 		const user = newUser.rows[0];
 
@@ -51,7 +63,6 @@ auth.post(
 				[user.id, `${full_name}`, "pending"],
 			);
 		}
-		const verificationOTP = generateOtp();
 		await EmailService.sendWelcomeEmail(
 			{ name: user.full_name, email: user.email },
 			verificationOTP,
@@ -289,6 +300,19 @@ auth.post(
 		return parsed.data;
 	}),
 	async (c) => {
+		const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '';
+		const rateLimitResult = await loginRateLimit(ip);
+
+		if (!rateLimitResult.ok) {
+			logger.error("Rate limit error:", rateLimitResult.error);
+			return c.json({ error: "Internal server error" }, 500);		
+		}
+		if (!rateLimitResult.value.allowed) {
+			return c.json({
+				error: "Too many password reset attempts. Please try again later.",
+				resetTime: rateLimitResult.value.resetTime
+			}, 429);
+		}
 		const { token, password } = c.req.valid("json");
 
 		const userResult = await query(
