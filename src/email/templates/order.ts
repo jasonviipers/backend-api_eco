@@ -1,12 +1,12 @@
 import { emailConfig } from "../email";
 
 export const orderConfirmationEmail = (
-  user: { name: string; email: string },
-  order: { orderNumber: string; total: number; items: any[] }
+	user: { name: string; email: string },
+	order: { orderNumber: string; total: number; items: any[] },
 ) => ({
-  to: user.email,
-  subject: `Order Confirmation - #${order.orderNumber}`,
-  html: `
+	to: user.email,
+	subject: `Order Confirmation - #${order.orderNumber}`,
+	html: `
     <!DOCTYPE html>
     <html>
     <head>
@@ -56,7 +56,9 @@ export const orderConfirmationEmail = (
           
           <div class="order-summary">
             <h3>Order Summary</h3>
-            ${order.items.map(item => `
+            ${order.items
+							.map(
+								(item) => `
               <div class="order-item">
                 <div>
                   <strong>${item.name}</strong><br>
@@ -64,7 +66,9 @@ export const orderConfirmationEmail = (
                 </div>
                 <div>$${item.price.toFixed(2)}</div>
               </div>
-            `).join('')}
+            `,
+							)
+							.join("")}
             
             <div class="total">
               Total: $${order.total.toFixed(2)}
@@ -89,7 +93,7 @@ export const orderConfirmationEmail = (
     </body>
     </html>
   `,
-  text: `
+	text: `
     Order Confirmation - #${order.orderNumber}
     
     Hello ${user.name},
@@ -97,9 +101,13 @@ export const orderConfirmationEmail = (
     Thank you for your order! We've received it and are processing it now.
     
     Order Summary:
-    ${order.items.map(item => `
+    ${order.items
+			.map(
+				(item) => `
     - ${item.name} (Qty: ${item.quantity}) - $${item.price.toFixed(2)}
-    `).join('')}
+    `,
+			)
+			.join("")}
     
     Total: $${order.total.toFixed(2)}
     
@@ -115,16 +123,16 @@ export const orderConfirmationEmail = (
     ---
     © ${new Date().getFullYear()} ${emailConfig.appName}. All rights reserved.
     Need help? Contact customer support at ${emailConfig.supportEmail}
-  `
+  `,
 });
 
 export const orderShippedEmail = (
-  user: { name: string; email: string },
-  order: { orderNumber: string; trackingNumber?: string; carrier?: string }
+	user: { name: string; email: string },
+	order: { orderNumber: string; trackingNumber?: string; carrier?: string },
 ) => ({
-  to: user.email,
-  subject: `Your Order Has Shipped - #${order.orderNumber}`,
-  html: `
+	to: user.email,
+	subject: `Your Order Has Shipped - #${order.orderNumber}`,
+	html: `
     <!DOCTYPE html>
     <html>
     <head>
@@ -160,14 +168,18 @@ export const orderShippedEmail = (
           <p>Hello ${user.name},</p>
           <p>Great news! Your order has shipped and is on its way to you.</p>
           
-          ${order.trackingNumber ? `
+          ${
+						order.trackingNumber
+							? `
           <div class="tracking-info">
             <p><strong>Tracking Information</strong></p>
             <div class="tracking-number">${order.trackingNumber}</div>
-            ${order.carrier ? `<p>Carrier: ${order.carrier}</p>` : ''}
+            ${order.carrier ? `<p>Carrier: ${order.carrier}</p>` : ""}
             <p>You can track your package using the link above.</p>
           </div>
-          ` : ''}
+          `
+							: ""
+					}
           
           <p>We hope you enjoy your purchase! If you have any questions, please reply to this email.</p>
           
@@ -181,18 +193,22 @@ export const orderShippedEmail = (
     </body>
     </html>
   `,
-  text: `
+	text: `
     Your Order Has Shipped - #${order.orderNumber}
     
     Hello ${user.name},
     
     Great news! Your order has shipped and is on its way to you.
     
-    ${order.trackingNumber ? `
+    ${
+			order.trackingNumber
+				? `
     Tracking Information:
     Tracking Number: ${order.trackingNumber}
-    ${order.carrier ? `Carrier: ${order.carrier}` : ''}
-    ` : ''}
+    ${order.carrier ? `Carrier: ${order.carrier}` : ""}
+    `
+				: ""
+		}
     
     We hope you enjoy your purchase! If you have any questions, please reply to this email.
     
@@ -202,16 +218,16 @@ export const orderShippedEmail = (
     ---
     © ${new Date().getFullYear()} ${emailConfig.appName}. All rights reserved.
     Need help? Contact customer support at ${emailConfig.supportEmail}
-  `
+  `,
 });
 
 export const refundNotificationEmail = (
-  user: { name: string; email: string },
-  refund: { orderNumber: string; amount: number; reason?: string }
+	user: { name: string; email: string },
+	refund: { orderNumber: string; amount: number; reason?: string },
 ) => ({
-  to: user.email,
-  subject: `Refund Processed - Order #${refund.orderNumber}`,
-  html: `
+	to: user.email,
+	subject: `Refund Processed - Order #${refund.orderNumber}`,
+	html: `
     <!DOCTYPE html>
     <html>
     <head>
@@ -250,7 +266,7 @@ export const refundNotificationEmail = (
             <h3>Refund Details</h3>
             <p><strong>Order Number:</strong> #${refund.orderNumber}</p>
             <div class="refund-amount">$${refund.amount.toFixed(2)}</div>
-            ${refund.reason ? `<p><strong>Reason:</strong> ${refund.reason}</p>` : ''}
+            ${refund.reason ? `<p><strong>Reason:</strong> ${refund.reason}</p>` : ""}
             <p>The refund should appear in your account within 5-10 business days.</p>
           </div>
           
@@ -266,7 +282,7 @@ export const refundNotificationEmail = (
     </body>
     </html>
   `,
-  text: `
+	text: `
     Refund Processed - Order #${refund.orderNumber}
     
     Hello ${user.name},
@@ -276,7 +292,7 @@ export const refundNotificationEmail = (
     Refund Details:
     - Order Number: #${refund.orderNumber}
     - Amount: $${refund.amount.toFixed(2)}
-    ${refund.reason ? `- Reason: ${refund.reason}\n` : ''}
+    ${refund.reason ? `- Reason: ${refund.reason}\n` : ""}
     
     The refund should appear in your account within 5-10 business days.
     
@@ -288,5 +304,5 @@ export const refundNotificationEmail = (
     ---
     © ${new Date().getFullYear()} ${emailConfig.appName}. All rights reserved.
     Need help? Contact customer support at ${emailConfig.supportEmail}
-  `
+  `,
 });

@@ -84,42 +84,42 @@ async function runPostgreSQLMigrations() {
 }
 
 async function runCassandraMigrations() {
-  try {
-    const sql = await readFile(
-      join(__dirname, "../src/db/cassandra-schema.cql"),
-      "utf8"
-    );
-    
-    // Split CQL statements by semicolon followed by newline
-    const statements = sql
-      .split(";\n")
-      .map(statement => statement.trim())
-      .filter(statement => statement.length > 0);
+	try {
+		const sql = await readFile(
+			join(__dirname, "../src/db/cassandra-schema.cql"),
+			"utf8",
+		);
 
-    for (const statement of statements) {
-      try {
-        await executeQuery(statement);
-        logger.info(
-          `Executed Cassandra statement: ${statement.split("\n")[0].substring(0, 50)}...`
-        );
-      } catch (error) {
-        if (error instanceof Error) {
-          // Skip errors for IF NOT EXISTS cases
-          if (error.message.includes("already exists")) {
-            logger.debug(`Skipping existing object: ${error.message}`);
-            continue;
-          }
-          logger.error(`Error executing Cassandra statement: ${error.message}`);
-        }
-        logger.debug(`Failed statement: ${statement}`);
-      }
-    }
+		// Split CQL statements by semicolon followed by newline
+		const statements = sql
+			.split(";\n")
+			.map((statement) => statement.trim())
+			.filter((statement) => statement.length > 0);
 
-    logger.info("Cassandra migrations completed successfully");
-  } catch (error) {
-    logger.error("Cassandra migration failed:", error);
-    throw error;
-  }
+		for (const statement of statements) {
+			try {
+				await executeQuery(statement);
+				logger.info(
+					`Executed Cassandra statement: ${statement.split("\n")[0].substring(0, 50)}...`,
+				);
+			} catch (error) {
+				if (error instanceof Error) {
+					// Skip errors for IF NOT EXISTS cases
+					if (error.message.includes("already exists")) {
+						logger.debug(`Skipping existing object: ${error.message}`);
+						continue;
+					}
+					logger.error(`Error executing Cassandra statement: ${error.message}`);
+				}
+				logger.debug(`Failed statement: ${statement}`);
+			}
+		}
+
+		logger.info("Cassandra migrations completed successfully");
+	} catch (error) {
+		logger.error("Cassandra migration failed:", error);
+		throw error;
+	}
 }
 
 async function migrate() {

@@ -51,10 +51,10 @@ auth.post(
 				[user.id, `${full_name}`, "pending"],
 			);
 		}
-		const verificationOTP = generateOtp()
+		const verificationOTP = generateOtp();
 		await EmailService.sendWelcomeEmail(
 			{ name: user.full_name, email: user.email },
-			verificationOTP
+			verificationOTP,
 		);
 		return c.json(
 			{
@@ -231,9 +231,10 @@ auth.post(
 	}),
 	async (c) => {
 		const { email } = await c.req.json();
-		const userResult = await query("SELECT id, full_name FROM users WHERE email = $1", [
-			email,
-		]);
+		const userResult = await query(
+			"SELECT id, full_name FROM users WHERE email = $1",
+			[email],
+		);
 		if (userResult.rows.length === 0) {
 			return c.json({
 				message: "If the email exists, a reset link has been sent",
@@ -248,9 +249,9 @@ auth.post(
 		);
 
 		await EmailService.sendPasswordResetEmail(
-			{name: user.full_name, email:email},
-			resetToken
-		)
+			{ name: user.full_name, email: email },
+			resetToken,
+		);
 		return c.json({
 			message: "If the email exists, a reset link has been sent",
 		});

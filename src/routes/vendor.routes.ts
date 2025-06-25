@@ -91,7 +91,7 @@ vendorRouter.post(
 		await EmailService.sendVendorRegistrationConfirmation({
 			name: c.get("user").full_name,
 			email: vendorData.businessEmail,
-			businessName: vendorData.businessName
+			businessName: vendorData.businessName,
 		});
 		return c.json(
 			{
@@ -634,13 +634,13 @@ vendorRouter.post(
 		await EmailService.sendVendorPayoutNotification(
 			{
 				name: c.get("user").full_name,
-				email: c.get("user").email
+				email: c.get("user").email,
 			},
 			{
 				amount: payout.amount,
 				status: payout.status,
-				payoutId: payout.id
-			}
+				payoutId: payout.id,
+			},
 		);
 		return c.json(
 			{
@@ -736,10 +736,10 @@ vendorRouter.put(
 			{
 				name: user.full_name,
 				email: user.email,
-				businessName: vendor.business_name
+				businessName: vendor.business_name,
 			},
-			status as 'approved' | 'rejected' | 'suspended',
-			reason
+			status as "approved" | "rejected" | "suspended",
+			reason,
 		);
 
 		// Create notification

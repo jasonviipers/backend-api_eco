@@ -163,12 +163,10 @@ userRouter.put(
 			[userId],
 		);
 
-		await EmailService.sendPasswordChangeConfirmationEmail(
-			{
-				name: userInfo.rows[0].full_name,
-				email: userInfo.rows[0].email,
-			}
-		);
+		await EmailService.sendPasswordChangeConfirmationEmail({
+			name: userInfo.rows[0].full_name,
+			email: userInfo.rows[0].email,
+		});
 
 		return c.json({ message: "Password changed successfully" });
 	}),

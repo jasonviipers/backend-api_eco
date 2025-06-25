@@ -1,12 +1,12 @@
 import { emailConfig } from "../email";
 
 export const welcomeEmailWithOTP = (
-  user: { name: string; email: string },
-  verificationOTP: string
+	user: { name: string; email: string },
+	verificationOTP: string,
 ) => ({
-  to: user.email,
-  subject: `Welcome to ${emailConfig.appName} - Verify Your Email`,
-  html: `
+	to: user.email,
+	subject: `Welcome to ${emailConfig.appName} - Verify Your Email`,
+	html: `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -285,7 +285,7 @@ export const welcomeEmailWithOTP = (
     </body>
     </html>
   `,
-  text: `
+	text: `
     Welcome to ${emailConfig.appName}!
     
     Hello ${user.name},

@@ -6,6 +6,7 @@ import streamRouter from "../routes/stream.routes";
 import { paymentRouter } from "../routes/payment.routes";
 import { videoRoutes } from "../routes/video.routes";
 import { vendorRouter } from "../routes/vendor.routes";
+import { orderRouter } from "../routes/order.routes";
 
 export function registerRoutes(app: Hono) {
 	app.get("/health", (c) => {
@@ -23,4 +24,5 @@ export function registerRoutes(app: Hono) {
 	app.route("/payment", paymentRouter);
 	app.route("/video", videoRoutes);
 	app.route("/vendor", vendorRouter);
+	app.route("/order", orderRouter);
 }
