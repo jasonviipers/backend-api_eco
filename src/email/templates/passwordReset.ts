@@ -1,12 +1,12 @@
 import { emailConfig } from "../email";
 
 export const passwordResetEmailWithOTP = (
-  user: { name: string; email: string },
-  resetOTP: string
+	user: { name: string; email: string },
+	resetOTP: string,
 ) => ({
-  to: user.email,
-  subject: `Password Reset Code for ${emailConfig.appName}`,
-  html: `
+	to: user.email,
+	subject: `Password Reset Code for ${emailConfig.appName}`,
+	html: `
     <!DOCTYPE html>
     <html>
     <head>
@@ -75,7 +75,7 @@ export const passwordResetEmailWithOTP = (
     </body>
     </html>
   `,
-  text: `
+	text: `
     Password Reset Request
     
     Hello ${user.name},
@@ -100,12 +100,13 @@ export const passwordResetEmailWithOTP = (
 });
 
 // Password Reset Confirmation Email
-export const passwordResetConfirmationEmail = (
-  user: { name: string; email: string },
-) => ({
-  to: user.email,
-  subject: `Password Successfully Reset for ${emailConfig.appName}`,
-  html: `
+export const passwordResetConfirmationEmail = (user: {
+	name: string;
+	email: string;
+}) => ({
+	to: user.email,
+	subject: `Password Successfully Reset for ${emailConfig.appName}`,
+	html: `
     <!DOCTYPE html>
     <html>
     <head>
@@ -170,7 +171,7 @@ export const passwordResetConfirmationEmail = (
     </body>
     </html>
   `,
-  text: `
+	text: `
     Password Successfully Reset
     
     Hello ${user.name},
@@ -195,12 +196,13 @@ export const passwordResetConfirmationEmail = (
 });
 
 // Password Reset Confirmation Email
-export const passwordChangeConfirmationEmail = (
-  user: { name: string; email: string },
-) => ({
-  to: user.email,
-  subject: `Password Changed Successfully - ${emailConfig.appName}`,
-  html: `
+export const passwordChangeConfirmationEmail = (user: {
+	name: string;
+	email: string;
+}) => ({
+	to: user.email,
+	subject: `Password Changed Successfully - ${emailConfig.appName}`,
+	html: `
     <!DOCTYPE html>
     <html>
     <head>
@@ -265,7 +267,7 @@ export const passwordChangeConfirmationEmail = (
     </body>
     </html>
   `,
-  text: `
+	text: `
     Password Changed Successfully
     
     Hello ${user.name},

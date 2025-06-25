@@ -1,4 +1,3 @@
-import { createId } from "@paralleldrive/cuid2";
 import { Hono } from "hono";
 import type { JwtVariables } from "hono/jwt";
 import { sign, verify } from "hono/jwt";
@@ -15,6 +14,7 @@ import {
 import { logger } from "../utils/logger";
 import { generateOtp } from "../utils/opt";
 import { EmailService } from "../email/email.service";
+import { loginRateLimit, passwordResetRateLimit } from "../utils/limitl";
 
 type Variables = JwtVariables;
 
@@ -29,6 +29,19 @@ auth.post(
 		return parsed.data;
 	}),
 	async (c) => {
+		const ip =
+			c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "";
+		const rateLimitResult = await loginRateLimit(ip);
+		if (!rateLimitResult.ok) {
+			logger.error("Rate limit error:", rateLimitResult.error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+		if (!rateLimitResult.value.allowed) {
+			return c.json({
+				error: "Too many register attempts. Please try again later.",
+				resetTime: rateLimitResult.value.resetTime,
+			});
+		}
 		const { email, password, full_name, phone, role } = c.req.valid("json");
 		const existingUser = await query("SELECT * FROM users WHERE email = $1", [
 			email,
@@ -37,11 +50,11 @@ auth.post(
 			return c.json({ error: "Please enter a valid email" }, 409);
 		}
 		const hashedPassword = await Bun.password.hash(password);
-		const verificationToken = generateOtp();
+		const verificationOTP = generateOtp();
 		const newUser = await query(
 			`INSERT INTO users (email, password, full_name, phone, role, verification_token, is_active)
       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id, email, full_name, role`,
-			[email, hashedPassword, full_name, phone, role, verificationToken, false],
+			[email, hashedPassword, full_name, phone, role, verificationOTP, false],
 		);
 		const user = newUser.rows[0];
 
@@ -51,10 +64,9 @@ auth.post(
 				[user.id, `${full_name}`, "pending"],
 			);
 		}
-		const verificationOTP = generateOtp()
 		await EmailService.sendWelcomeEmail(
 			{ name: user.full_name, email: user.email },
-			verificationOTP
+			verificationOTP,
 		);
 		return c.json(
 			{
@@ -82,6 +94,24 @@ auth.post(
 		return parsed.data;
 	}),
 	async (c) => {
+		const ip =
+			c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "";
+		const rateLimitResult = await loginRateLimit(ip);
+
+		if (!rateLimitResult.ok) {
+			logger.error("Rate limit error:", rateLimitResult.error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+
+		if (!rateLimitResult.value.allowed) {
+			return c.json(
+				{
+					error: "Too many login attempts. Please try again later.",
+					resetTime: rateLimitResult.value.resetTime,
+				},
+				429,
+			);
+		}
 		const { email, password } = c.req.valid("json");
 
 		const userResult = await query(
@@ -135,15 +165,10 @@ auth.post(
 			message: "Login successful",
 			token,
 			refreshToken,
-			user: {
-				id: user.id,
-				email: user.email,
-				full_name: user.full_name,
-				role: user.role,
-			},
 		});
 	},
 );
+
 auth.post("/refresh", async (c) => {
 	const { refreshToken } = await c.req.json();
 
@@ -231,9 +256,26 @@ auth.post(
 	}),
 	async (c) => {
 		const { email } = await c.req.json();
-		const userResult = await query("SELECT id, full_name FROM users WHERE email = $1", [
-			email,
-		]);
+		const rateLimitResult = await passwordResetRateLimit(email);
+
+		if (!rateLimitResult.ok) {
+			logger.error("Rate limit error:", rateLimitResult.error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+
+		if (!rateLimitResult.value.allowed) {
+			return c.json(
+				{
+					error: "Too many password reset requests. Please try again later.",
+					resetTime: rateLimitResult.value.resetTime,
+				},
+				429,
+			);
+		}
+		const userResult = await query(
+			"SELECT id, full_name FROM users WHERE email = $1",
+			[email],
+		);
 		if (userResult.rows.length === 0) {
 			return c.json({
 				message: "If the email exists, a reset link has been sent",
@@ -248,9 +290,9 @@ auth.post(
 		);
 
 		await EmailService.sendPasswordResetEmail(
-			{name: user.full_name, email:email},
-			resetToken
-		)
+			{ name: user.full_name, email: email },
+			resetToken,
+		);
 		return c.json({
 			message: "If the email exists, a reset link has been sent",
 		});
@@ -266,6 +308,23 @@ auth.post(
 		return parsed.data;
 	}),
 	async (c) => {
+		const ip =
+			c.req.header("x-forwarded-for") || c.req.header("x-real-ip") || "";
+		const rateLimitResult = await loginRateLimit(ip);
+
+		if (!rateLimitResult.ok) {
+			logger.error("Rate limit error:", rateLimitResult.error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+		if (!rateLimitResult.value.allowed) {
+			return c.json(
+				{
+					error: "Too many password reset attempts. Please try again later.",
+					resetTime: rateLimitResult.value.resetTime,
+				},
+				429,
+			);
+		}
 		const { token, password } = c.req.valid("json");
 
 		const userResult = await query(

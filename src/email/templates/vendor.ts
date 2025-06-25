@@ -1,11 +1,13 @@
 import { emailConfig } from "../email";
 
-export const vendorRegistrationConfirmationEmail = (
-  vendor: { name: string; email: string; businessName: string }
-) => ({
-  to: vendor.email,
-  subject: `Vendor Registration Received - ${emailConfig.appName}`,
-  html: `
+export const vendorRegistrationConfirmationEmail = (vendor: {
+	name: string;
+	email: string;
+	businessName: string;
+}) => ({
+	to: vendor.email,
+	subject: `Vendor Registration Received - ${emailConfig.appName}`,
+	html: `
     <!DOCTYPE html>
     <html>
     <head>
@@ -52,7 +54,7 @@ export const vendorRegistrationConfirmationEmail = (
     </body>
     </html>
   `,
-  text: `
+	text: `
     Vendor Registration Received
     
     Hello ${vendor.name},
@@ -72,38 +74,40 @@ export const vendorRegistrationConfirmationEmail = (
     ---
     © ${new Date().getFullYear()} ${emailConfig.appName}. All rights reserved.
     If you have any questions, please contact our support team at ${emailConfig.supportEmail}.
-  `
+  `,
 });
 
 export const vendorStatusUpdateEmail = (
-  vendor: { name: string; email: string; businessName: string },
-  status: 'approved' | 'rejected' | 'suspended',
-  reason?: string
+	vendor: { name: string; email: string; businessName: string },
+	status: "approved" | "rejected" | "suspended",
+	reason?: string,
 ) => {
-  const statusMessages = {
-    approved: {
-      subject: 'Vendor Application Approved',
-      message: 'Congratulations! Your vendor application has been approved.',
-      action: 'You can now log in to your vendor dashboard and start adding products and creating live streams.'
-    },
-    rejected: {
-      subject: 'Vendor Application Rejected',
-      message: 'We regret to inform you that your vendor application has been rejected.',
-      action: ''
-    },
-    suspended: {
-      subject: 'Vendor Account Suspended',
-      message: 'Your vendor account has been suspended.',
-      action: 'Please contact our support team for more information.'
-    }
-  };
+	const statusMessages = {
+		approved: {
+			subject: "Vendor Application Approved",
+			message: "Congratulations! Your vendor application has been approved.",
+			action:
+				"You can now log in to your vendor dashboard and start adding products and creating live streams.",
+		},
+		rejected: {
+			subject: "Vendor Application Rejected",
+			message:
+				"We regret to inform you that your vendor application has been rejected.",
+			action: "",
+		},
+		suspended: {
+			subject: "Vendor Account Suspended",
+			message: "Your vendor account has been suspended.",
+			action: "Please contact our support team for more information.",
+		},
+	};
 
-  const statusInfo = statusMessages[status];
+	const statusInfo = statusMessages[status];
 
-  return {
-    to: vendor.email,
-    subject: `${statusInfo.subject} - ${emailConfig.appName}`,
-    html: `
+	return {
+		to: vendor.email,
+		subject: `${statusInfo.subject} - ${emailConfig.appName}`,
+		html: `
       <!DOCTYPE html>
       <html>
       <head>
@@ -112,9 +116,12 @@ export const vendorStatusUpdateEmail = (
           .container { max-width: 600px; margin: 0 auto; padding: 20px; }
           .header { 
             background-color: ${
-              status === 'approved' ? '#10B981' : 
-              status === 'rejected' ? '#EF4444' : '#F59E0B'
-            }; 
+							status === "approved"
+								? "#10B981"
+								: status === "rejected"
+									? "#EF4444"
+									: "#F59E0B"
+						}; 
             padding: 20px; 
             text-align: center; 
             color: white; 
@@ -126,29 +133,41 @@ export const vendorStatusUpdateEmail = (
             margin: 20px 0; 
             border-radius: 8px;
             border: 2px solid ${
-              status === 'approved' ? '#10B981' : 
-              status === 'rejected' ? '#EF4444' : '#F59E0B'
-            };
+							status === "approved"
+								? "#10B981"
+								: status === "rejected"
+									? "#EF4444"
+									: "#F59E0B"
+						};
             text-align: center;
           }
           .status-icon {
             font-size: 48px;
             color: ${
-              status === 'approved' ? '#10B981' : 
-              status === 'rejected' ? '#EF4444' : '#F59E0B'
-            };
+							status === "approved"
+								? "#10B981"
+								: status === "rejected"
+									? "#EF4444"
+									: "#F59E0B"
+						};
             margin-bottom: 15px;
           }
           .reason-box {
             background-color: ${
-              status === 'approved' ? '#ECFDF5' : 
-              status === 'rejected' ? '#FEF2F2' : '#FFFBEB'
-            };
+							status === "approved"
+								? "#ECFDF5"
+								: status === "rejected"
+									? "#FEF2F2"
+									: "#FFFBEB"
+						};
             padding: 15px;
             border-left: 4px solid ${
-              status === 'approved' ? '#10B981' : 
-              status === 'rejected' ? '#EF4444' : '#F59E0B'
-            };
+							status === "approved"
+								? "#10B981"
+								: status === "rejected"
+									? "#EF4444"
+									: "#F59E0B"
+						};
             margin: 20px 0;
           }
           .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #666; }
@@ -164,21 +183,24 @@ export const vendorStatusUpdateEmail = (
             
             <div class="status-box">
               <div class="status-icon">${
-                status === 'approved' ? '✓' : 
-                status === 'rejected' ? '✗' : '⚠'
-              }</div>
+								status === "approved" ? "✓" : status === "rejected" ? "✗" : "⚠"
+							}</div>
               <h2>${statusInfo.message}</h2>
               <p>Business: ${vendor.businessName}</p>
             </div>
             
-            ${reason ? `
+            ${
+							reason
+								? `
               <div class="reason-box">
-                <p><strong>${status === 'approved' ? 'Notes:' : 'Reason:'}</strong></p>
+                <p><strong>${status === "approved" ? "Notes:" : "Reason:"}</strong></p>
                 <p>${reason}</p>
               </div>
-            ` : ''}
+            `
+								: ""
+						}
             
-            ${statusInfo.action ? `<p>${statusInfo.action}</p>` : ''}
+            ${statusInfo.action ? `<p>${statusInfo.action}</p>` : ""}
             
             <p>Best regards,<br/>The ${emailConfig.appName} Team</p>
           </div>
@@ -190,21 +212,25 @@ export const vendorStatusUpdateEmail = (
       </body>
       </html>
     `,
-    text: `
+		text: `
       ${statusInfo.subject}
       
       Hello ${vendor.name},
       
       ${statusInfo.message}
       
-      Business: ${vendor.businessName}
+      Business: ${vendor.businessName}b
       
-      ${reason ? `
-      ${status === 'approved' ? 'Notes:' : 'Reason:'}
+      ${
+				reason
+					? `
+      ${status === "approved" ? "Notes:" : "Reason:"}
       ${reason}
-      ` : ''}
+      `
+					: ""
+			}
       
-      ${statusInfo.action ? statusInfo.action : ''}
+      ${statusInfo.action || ""}
       
       Best regards,
       The ${emailConfig.appName} Team
@@ -212,17 +238,17 @@ export const vendorStatusUpdateEmail = (
       ---
       © ${new Date().getFullYear()} ${emailConfig.appName}. All rights reserved.
       If you have any questions, please contact our support team at ${emailConfig.supportEmail}.
-    `
-  };
+    `,
+	};
 };
 
 export const vendorPayoutNotificationEmail = (
-  vendor: { name: string; email: string },
-  payout: { amount: number; status: string; payoutId: string }
+	vendor: { name: string; email: string },
+	payout: { amount: number; status: string; payoutId: string },
 ) => ({
-  to: vendor.email,
-  subject: `Payout ${payout.status} - ${emailConfig.appName}`,
-  html: `
+	to: vendor.email,
+	subject: `Payout ${payout.status} - ${emailConfig.appName}`,
+	html: `
     <!DOCTYPE html>
     <html>
     <head>
@@ -231,9 +257,12 @@ export const vendorPayoutNotificationEmail = (
         .container { max-width: 600px; margin: 0 auto; padding: 20px; }
         .header { 
           background-color: ${
-            payout.status === 'completed' ? '#10B981' : 
-            payout.status === 'failed' ? '#EF4444' : '#3B82F6'
-          }; 
+						payout.status === "completed"
+							? "#10B981"
+							: payout.status === "failed"
+								? "#EF4444"
+								: "#3B82F6"
+					}; 
           padding: 20px; 
           text-align: center; 
           color: white; 
@@ -250,9 +279,12 @@ export const vendorPayoutNotificationEmail = (
           font-size: 24px;
           font-weight: bold;
           color: ${
-            payout.status === 'completed' ? '#10B981' : 
-            payout.status === 'failed' ? '#EF4444' : '#3B82F6'
-          };
+						payout.status === "completed"
+							? "#10B981"
+							: payout.status === "failed"
+								? "#EF4444"
+								: "#3B82F6"
+					};
         }
         .footer { margin-top: 20px; font-size: 12px; text-align: center; color: #666; }
       </style>
@@ -273,12 +305,12 @@ export const vendorPayoutNotificationEmail = (
           </div>
           
           ${
-            payout.status === 'completed' 
-              ? '<p>The funds should appear in your account within 3-5 business days.</p>'
-              : payout.status === 'failed'
-              ? '<p>There was an issue processing your payout. Our team has been notified and will contact you shortly.</p>'
-              : '<p>Your payout request is being processed. You\'ll receive another notification once it\'s completed.</p>'
-          }
+						payout.status === "completed"
+							? "<p>The funds should appear in your account within 3-5 business days.</p>"
+							: payout.status === "failed"
+								? "<p>There was an issue processing your payout. Our team has been notified and will contact you shortly.</p>"
+								: "<p>Your payout request is being processed. You'll receive another notification once it's completed.</p>"
+					}
           
           <p>Best regards,<br/>The ${emailConfig.appName} Team</p>
         </div>
@@ -290,7 +322,7 @@ export const vendorPayoutNotificationEmail = (
     </body>
     </html>
   `,
-  text: `
+	text: `
     Payout ${payout.status.charAt(0).toUpperCase() + payout.status.slice(1)}
     
     Hello ${vendor.name},
@@ -301,12 +333,12 @@ export const vendorPayoutNotificationEmail = (
     - Reference ID: ${payout.payoutId}
     
     ${
-      payout.status === 'completed' 
-        ? 'The funds should appear in your account within 3-5 business days.'
-        : payout.status === 'failed'
-        ? 'There was an issue processing your payout. Our team has been notified and will contact you shortly.'
-        : 'Your payout request is being processed. You\'ll receive another notification once it\'s completed.'
-    }
+			payout.status === "completed"
+				? "The funds should appear in your account within 3-5 business days."
+				: payout.status === "failed"
+					? "There was an issue processing your payout. Our team has been notified and will contact you shortly."
+					: "Your payout request is being processed. You'll receive another notification once it's completed."
+		}
     
     Best regards,
     The ${emailConfig.appName} Team
@@ -314,5 +346,5 @@ export const vendorPayoutNotificationEmail = (
     ---
     © ${new Date().getFullYear()} ${emailConfig.appName}. All rights reserved.
     If you have any questions, please contact our support team at ${emailConfig.supportEmail}.
-  `
+  `,
 });
