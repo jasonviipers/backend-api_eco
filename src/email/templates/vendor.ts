@@ -230,7 +230,7 @@ export const vendorStatusUpdateEmail = (
 					: ""
 			}
       
-      ${statusInfo.action ? statusInfo.action : ""}
+      ${statusInfo.action || ""}
       
       Best regards,
       The ${emailConfig.appName} Team
