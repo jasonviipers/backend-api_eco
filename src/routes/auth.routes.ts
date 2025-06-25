@@ -1,4 +1,3 @@
-import { createId } from "@paralleldrive/cuid2";
 import { Hono } from "hono";
 import type { JwtVariables } from "hono/jwt";
 import { sign, verify } from "hono/jwt";
@@ -15,6 +14,7 @@ import {
 import { logger } from "../utils/logger";
 import { generateOtp } from "../utils/opt";
 import { EmailService } from "../email/email.service";
+import { loginRateLimit, passwordResetRateLimit } from "../utils/limitl";
 
 type Variables = JwtVariables;
 
@@ -82,6 +82,20 @@ auth.post(
 		return parsed.data;
 	}),
 	async (c) => {
+		const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '';
+		const rateLimitResult = await loginRateLimit(ip);
+
+		if (!rateLimitResult.ok) {
+			logger.error("Rate limit error:", rateLimitResult.error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+
+		if (!rateLimitResult.value.allowed) {
+			return c.json({
+				error: "Too many login attempts. Please try again later.",
+				resetTime: rateLimitResult.value.resetTime
+			}, 429);
+		}
 		const { email, password } = c.req.valid("json");
 
 		const userResult = await query(
@@ -135,15 +149,10 @@ auth.post(
 			message: "Login successful",
 			token,
 			refreshToken,
-			user: {
-				id: user.id,
-				email: user.email,
-				full_name: user.full_name,
-				role: user.role,
-			},
 		});
 	},
 );
+
 auth.post("/refresh", async (c) => {
 	const { refreshToken } = await c.req.json();
 
@@ -231,6 +240,19 @@ auth.post(
 	}),
 	async (c) => {
 		const { email } = await c.req.json();
+		const rateLimitResult = await passwordResetRateLimit(email);
+
+		if (!rateLimitResult.ok) {
+			logger.error("Rate limit error:", rateLimitResult.error);
+			return c.json({ error: "Internal server error" }, 500);
+		}
+
+		if (!rateLimitResult.value.allowed) {
+			return c.json({
+				error: "Too many password reset requests. Please try again later.",
+				resetTime: rateLimitResult.value.resetTime
+			}, 429);
+		}
 		const userResult = await query(
 			"SELECT id, full_name FROM users WHERE email = $1",
 			[email],
