@@ -14,6 +14,7 @@ import {
 } from "../schemas/auth";
 import { logger } from "../utils/logger";
 import { generateOtp } from "../utils/opt";
+import { EmailService } from "../email/email.service";
 
 type Variables = JwtVariables;
 
@@ -50,7 +51,11 @@ auth.post(
 				[user.id, `${full_name}`, "pending"],
 			);
 		}
-		// TODO: Send verification email
+		const verificationOTP = generateOtp()
+		await EmailService.sendWelcomeEmail(
+			{ name: user.full_name, email: user.email },
+			verificationOTP
+		);
 		return c.json(
 			{
 				message:
@@ -225,8 +230,8 @@ auth.post(
 		return parsed.data;
 	}),
 	async (c) => {
-		const { email } = c.req.valid("json");
-		const userResult = await query("SELECT id FROM users WHERE email = $1", [
+		const { email } = await c.req.json();
+		const userResult = await query("SELECT id, full_name FROM users WHERE email = $1", [
 			email,
 		]);
 		if (userResult.rows.length === 0) {
@@ -234,13 +239,18 @@ auth.post(
 				message: "If the email exists, a reset link has been sent",
 			});
 		}
-		const resetToken = createId();
+		const user = userResult.rows[0];
+		const resetToken = generateOtp();
 		const resetExpires = new Date(Date.now() + 3600000); // 1 hour from now
 		await query(
 			"UPDATE users SET reset_token = $1, reset_expires = $2 WHERE email = $3",
 			[resetToken, resetExpires, email],
 		);
-		// TODO: Send reset email
+
+		await EmailService.sendPasswordResetEmail(
+			{name: user.full_name, email:email},
+			resetToken
+		)
 		return c.json({
 			message: "If the email exists, a reset link has been sent",
 		});

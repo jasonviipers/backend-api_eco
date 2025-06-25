@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { connectPostgreSQL, query } from "../src/config/postgresql";
 import { logger } from "../src/utils/logger";
+import { connectCassandra, executeQuery } from "../src/config/cassandra";
 
 function splitSQLStatements(sql: string): string[] {
 	const statements: string[] = [];
@@ -82,17 +83,56 @@ async function runPostgreSQLMigrations() {
 	}
 }
 
+async function runCassandraMigrations() {
+  try {
+    const sql = await readFile(
+      join(__dirname, "../src/db/cassandra-schema.cql"),
+      "utf8"
+    );
+    
+    // Split CQL statements by semicolon followed by newline
+    const statements = sql
+      .split(";\n")
+      .map(statement => statement.trim())
+      .filter(statement => statement.length > 0);
+
+    for (const statement of statements) {
+      try {
+        await executeQuery(statement);
+        logger.info(
+          `Executed Cassandra statement: ${statement.split("\n")[0].substring(0, 50)}...`
+        );
+      } catch (error) {
+        if (error instanceof Error) {
+          // Skip errors for IF NOT EXISTS cases
+          if (error.message.includes("already exists")) {
+            logger.debug(`Skipping existing object: ${error.message}`);
+            continue;
+          }
+          logger.error(`Error executing Cassandra statement: ${error.message}`);
+        }
+        logger.debug(`Failed statement: ${statement}`);
+      }
+    }
+
+    logger.info("Cassandra migrations completed successfully");
+  } catch (error) {
+    logger.error("Cassandra migration failed:", error);
+    throw error;
+  }
+}
+
 async function migrate() {
 	try {
 		logger.info("Starting database migrations...");
 
 		// Connect to databases
 		await connectPostgreSQL();
-		// await connectCassandra();
+		await connectCassandra();
 
 		// Run migrations
 		await runPostgreSQLMigrations();
-		// await runCassandraMigrations();
+		await runCassandraMigrations();
 
 		logger.info("All database migrations completed successfully");
 		process.exit(0);

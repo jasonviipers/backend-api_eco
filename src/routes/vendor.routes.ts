@@ -9,7 +9,6 @@ import {
 	requireAdmin,
 } from "../middleware/auth";
 import { validateRequest } from "../middleware/validation";
-import { sendEmail } from "../utils/email";
 import {
 	updateVendorSchema,
 	vendorQuerySchema,
@@ -17,6 +16,7 @@ import {
 } from "../schemas/vendor";
 import { asyncHandler } from "../middleware/erroHandler";
 import { getFile, uploadMiddleware } from "../utils/hono-upload";
+import { EmailService } from "../email/email.service";
 
 export const vendorRouter = new Hono();
 
@@ -88,17 +88,11 @@ vendorRouter.post(
 			],
 		);
 
-		// Send confirmation email to vendor TODO::
-		// await sendEmail({
-		//     to: vendorData.businessEmail,
-		//     subject: 'Vendor Registration Received',
-		//     html: `
-		//   <h1>Thank you for your vendor application!</h1>
-		//   <p>We have received your application to become a vendor on our platform.</p>
-		//   <p>Our team will review your application and get back to you within 2-3 business days.</p>
-		//   <p>Business Name: ${vendorData.businessName}</p>
-		// `,
-		// })
+		await EmailService.sendVendorRegistrationConfirmation({
+			name: c.get("user").full_name,
+			email: vendorData.businessEmail,
+			businessName: vendorData.businessName
+		});
 		return c.json(
 			{
 				message:
@@ -637,6 +631,17 @@ vendorRouter.post(
 			[JSON.stringify({ vendorId, amount, payoutId: payout.id })],
 		);
 
+		await EmailService.sendVendorPayoutNotification(
+			{
+				name: c.get("user").full_name,
+				email: c.get("user").email
+			},
+			{
+				amount: payout.amount,
+				status: payout.status,
+				payoutId: payout.id
+			}
+		);
 		return c.json(
 			{
 				message: "Payout request submitted successfully",
@@ -716,7 +721,7 @@ vendorRouter.put(
 
 		// Get vendor user info for notification
 		const userResult = await query(
-			"SELECT email, first_name FROM users WHERE id = $1",
+			"SELECT email, full_name FROM users WHERE id = $1",
 			[vendor.user_id],
 		);
 		const user = userResult.rows[0];
@@ -727,18 +732,15 @@ vendorRouter.put(
 			rejected: "Unfortunately, your vendor application has been rejected.",
 			suspended: "Your vendor account has been suspended.",
 		};
-
-		await sendEmail({
-			to: user.email,
-			subject: `Vendor Application ${status.charAt(0).toUpperCase() + status.slice(1)}`,
-			html: `
-          <h1>Vendor Application Update</h1>
-          <p>Hi ${user.first_name},</p>
-          <p>${statusMessages[status as keyof typeof statusMessages]}</p>
-          ${reason ? `<p>Reason: ${reason}</p>` : ""}
-          ${status === "approved" ? "<p>You can now start adding products and creating live streams!</p>" : ""}
-        `,
-		});
+		await EmailService.sendVendorStatusUpdate(
+			{
+				name: user.full_name,
+				email: user.email,
+				businessName: vendor.business_name
+			},
+			status as 'approved' | 'rejected' | 'suspended',
+			reason
+		);
 
 		// Create notification
 		await query(
