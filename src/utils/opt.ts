@@ -10,3 +10,23 @@ export const generateOtp = (length: string = "6") => {
 export const validateVideoFile = (file: File): boolean => {
 	return file.type.startsWith("video/");
 };
+
+// Helper function to generate tracking URLs for common carriers
+export function getTrackingUrl(
+	carrier: string,
+	trackingNumber: string,
+): string | null {
+	if (!trackingNumber) return null;
+
+	const normalizedCarrier = carrier.toLowerCase();
+
+	const carrierUrls: Record<string, string> = {
+		fedex: `https://www.fedex.com/fedextrack/?tracknumbers=${trackingNumber}`,
+		ups: `https://www.ups.com/track?tracknum=${trackingNumber}`,
+		usps: `https://tools.usps.com/go/TrackConfirmAction?tLabels=${trackingNumber}`,
+		dhl: `https://www.dhl.com/en/express/tracking.html?AWB=${trackingNumber}`,
+		amazon: `https://www.amazon.com/progress-tracker/package/ref=pe_385040_30332190_TE_3p_dp_1/?trackingId=${trackingNumber}`,
+	};
+
+	return carrierUrls[normalizedCarrier] || null;
+}

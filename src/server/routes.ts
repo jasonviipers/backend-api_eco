@@ -9,14 +9,14 @@ import { vendorRouter } from "../routes/vendor.routes";
 import { orderRouter } from "../routes/order.routes";
 
 export function registerRoutes(app: Hono) {
-	app.get('/', (c) => {
+	app.get("/", (c) => {
 		return c.json({
 			message: "Live Commerce API",
 			version: "1.0.0",
 			status: "active",
 			timestamp: new Date().toISOString(),
 		});
-	})
+	});
 	app.get("/health", (c) => {
 		return c.json({
 			status: "OK",
