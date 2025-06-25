@@ -592,7 +592,7 @@ paymentRouter.get(
 			`
         SELECT 
           p.*, o.order_number, o.total_amount, o.user_id,
-          u.full_name,, u.email
+          u.full_name,u.email
         FROM payments p
         JOIN orders o ON p.order_id = o.id
         JOIN users u ON o.user_id = u.id

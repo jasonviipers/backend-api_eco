@@ -298,6 +298,7 @@ auth.post(
 		});
 	},
 );
+
 auth.post(
 	"/reset-password",
 	validator("json", (value, c) => {
@@ -346,6 +347,7 @@ auth.post(
 		return c.json({ message: "Password reset successfully" });
 	},
 );
+
 auth.post("/logout", async (c) => {
 	const { refreshToken } = await c.req.json();
 
