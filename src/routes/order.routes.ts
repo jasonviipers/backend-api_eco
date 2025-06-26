@@ -12,33 +12,9 @@ import {
 	orderQuerySchema,
 	updateOrderStatusSchema,
 } from "../schemas/order";
+import { getTrackingUrl } from "../utils/opt";
+import { OrderItem, ProductRow, ShippingInfo, VendorOrderItem } from "../types";
 
-type OrderItem = {
-	productId: string;
-	productName: string;
-	price: number;
-	quantity: number;
-	vendorId: string;
-};
-
-type VendorOrderItem = {
-	productId: string;
-	productName: string;
-	quantity: number;
-	unitPrice: number;
-	totalPrice: number;
-	commissionRate: number;
-	commissionAmount: number;
-};
-
-type ProductRow = {
-	id: string;
-	name: string;
-	price: number;
-	inventory: number;
-	vendor_id: string;
-	commission_rate: number;
-};
 export const orderRouter = new Hono();
 
 // Create new order
@@ -714,5 +690,87 @@ orderRouter.get(
 				totalPages: Math.ceil(total / limitNum),
 			},
 		});
+	}),
+);
+
+// Get order tracking information
+orderRouter.get(
+	"/:id/tracking",
+	authenticateToken,
+	asyncHandler(async (c) => {
+		const orderId = c.req.param("id");
+		const userId = c.get("user").id;
+		const userRole = c.get("user").role;
+
+		// Check order exists and user has permission
+		const orderResult = await query(
+			`SELECT 
+                o.id, o.order_number, o.status, o.notes,
+                o.shipping_address->>'trackingNumber' as tracking_number,
+                o.shipping_address->>'carrier' as carrier,
+                o.shipping_address->>'estimatedDelivery' as estimated_delivery
+            FROM orders o
+            LEFT JOIN order_items oi ON o.id = oi.order_id
+            LEFT JOIN vendors v ON oi.vendor_id = v.id
+            WHERE o.id = $1 AND (
+                o.user_id = $2 OR 
+                $3 = 'admin' OR 
+                ($3 = 'vendor' AND v.user_id = $2)
+            LIMIT 1`,
+			[orderId, userId, userRole],
+		);
+		if (orderResult.rows.length === 0) {
+			return c.json({ error: "Order not found or access denied" }, 404);
+		}
+		const order = orderResult.rows[0];
+
+		// Only provide tracking info if order is shipped or delivered
+		if (!["shipped", "delivered"].includes(order.status)) {
+			return c.json(
+				{
+					error: "Tracking information is not available yet",
+					status: order.status,
+				},
+				400,
+			);
+		}
+
+		// Parse the notes JSON if it exists
+		let shippingInfo = {} as ShippingInfo;
+		try {
+			shippingInfo = order.notes ? JSON.parse(order.notes) : {};
+		} catch (error) {
+			logger.error("Failed to parse order notes:", error);
+		}
+
+		const trackingInfo = {
+			orderId: order.id,
+			orderNumber: order.order_number,
+			status: order.status,
+			carrier: order.carrier || shippingInfo.carrier || "Unknown",
+			trackingNumber:
+				order.tracking_number || shippingInfo.trackingNumber || null,
+			estimatedDelivery:
+				order.estimated_delivery || shippingInfo.estimatedDelivery || null,
+			shippingInfo: shippingInfo,
+			lastUpdated: new Date().toISOString(),
+			trackingUrl: order.carrier
+				? getTrackingUrl(order.carrier, order.tracking_number)
+				: null,
+		};
+
+		await EmailService.sendOrderShippedNotification(
+			{
+				name: c.get("user").full_name,
+				email: c.get("user").email,
+			},
+			{
+				orderNumber: order.order_number,
+				trackingNumber: order.tracking_number,
+				carrier: order.carrier,
+			},
+		);
+
+		return c.json(trackingInfo);
 	}),
 );
