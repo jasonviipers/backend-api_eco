@@ -30,3 +30,19 @@ export type ShippingInfo = {
 	trackingNumber?: string;
 	estimatedDelivery?: string;
 };
+
+export type AnalyticsRow = {
+	date: Date;
+	total_sales: number;
+	total_orders: number;
+	total_views: number;
+	avg_rating: number;
+	commission_earned: number;
+};
+
+export type Totals = {
+	totalSales: number;
+	totalOrders: number;
+	totalViews: number;
+	totalCommission: number;
+};

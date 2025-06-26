@@ -17,6 +17,8 @@ import {
 import { asyncHandler } from "../middleware/erroHandler";
 import { getFile, uploadMiddleware } from "../utils/hono-upload";
 import { EmailService } from "../email/email.service";
+import { logger } from "../utils/logger";
+import { AnalyticsRow, Totals } from "../types";
 
 export const vendorRouter = new Hono();
 
@@ -473,97 +475,155 @@ vendorRouter.post(
 );
 
 // Get vendor analytics
-// vendorRouter.get(
-//     "/analytics/overview",
-//     authenticateToken,
-//     requireVendor,
-//     asyncHandler(async (c) => {
-//         const vendorId = c.get("vendorId");
-//         const { days = "30" } = c.req.query();
-//         const daysNum = Number.parseInt(days);
+vendorRouter.get(
+	"/analytics/overview",
+	authenticateToken,
+	requireVendor,
+	asyncHandler(async (c) => {
+		const vendorId = c.get("vendorId");
+		const { days = "30" } = c.req.query();
+		const daysNum = Number.parseInt(days);
 
-//         try {
-//             // Get analytics from Cassandra
-//             const endDate = new Date();
-//             const startDate = new Date(
-//                 endDate.getTime() - daysNum * 24 * 60 * 60 * 1000,
-//             );
+		// Validate days parameter
+		if (isNaN(daysNum) || daysNum <= 0 || daysNum > 365) {
+			return c.json({ error: "Invalid days parameter (1-365 allowed)" }, 400);
+		}
 
-//             const analyticsResult = await executeQuery(
-//                 `
-//         SELECT date, total_sales, total_orders, total_views, avg_rating, commission_earned
-//         FROM vendor_analytics
-//         WHERE vendor_id = ? AND date >= ? AND date <= ?
-//         ORDER BY date DESC
-//       `,
-//                 [vendorId, startDate, endDate],
-//             );
+		try {
+			// Get analytics from Cassandra
+			const endDate = new Date();
+			const startDate = new Date(
+				endDate.getTime() - daysNum * 24 * 60 * 60 * 1000,
+			);
 
-//             const analytics = analyticsResult.rows;
+			let analyticsResult;
+			try {
+				analyticsResult = await executeQuery(
+					`SELECT date, total_sales, total_orders, total_views, avg_rating, commission_earned
+                     FROM vendor_analytics
+                     WHERE vendor_id = ? AND date >= ? AND date <= ?
+                     ORDER BY date DESC`,
+					[vendorId, startDate, endDate],
+				);
+			} catch (cassandraError) {
+				logger.warn(
+					"Cassandra query failed, falling back to PostgreSQL",
+					cassandraError,
+				);
+				analyticsResult = { rows: [] };
+			}
 
-//             // Calculate totals
-//             const totals = analytics.reduce(
-//                 (acc, row) => ({
-//                     totalSales: acc.totalSales + (row.total_sales || 0),
-//                     totalOrders: acc.totalOrders + (row.total_orders || 0),
-//                     totalViews: acc.totalViews + (row.total_views || 0),
-//                     totalCommission: acc.totalCommission + (row.commission_earned || 0),
-//                 }),
-//                 { totalSales: 0, totalOrders: 0, totalViews: 0, totalCommission: 0 },
-//             );
+			// If we have Cassandra data, return it
+			if (analyticsResult.rows.length > 0) {
+				const analytics = analyticsResult.rows as AnalyticsRow[];
 
-//             return c.json({
-//                 analytics,
-//                 totals,
-//                 period: {
-//                     days: daysNum,
-//                     startDate,
-//                     endDate,
-//                 },
-//             });
-//         } catch (error) {
-//             // Fallback to PostgreSQL if Cassandra is not available
-//             const fallbackResult = await query(
-//                 `
-//         SELECT
-//           DATE(created_at) as date,
-//           COUNT(*) as total_orders,
-//           SUM(total_price) as total_sales,
-//           SUM(commission_amount) as commission_earned
-//         FROM order_items
-//         WHERE vendor_id = $1 AND created_at >= $2
-//         GROUP BY DATE(created_at)
-//         ORDER BY date DESC
-//       `,
-//                 [vendorId, new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000)],
-//             );
+				// Calculate totals with proper typing
+				const totals = analytics.reduce<Totals>(
+					(acc: Totals, row: AnalyticsRow) => ({
+						totalSales: acc.totalSales + (row.total_sales || 0),
+						totalOrders: acc.totalOrders + (row.total_orders || 0),
+						totalViews: acc.totalViews + (row.total_views || 0),
+						totalCommission: acc.totalCommission + (row.commission_earned || 0),
+					}),
+					{ totalSales: 0, totalOrders: 0, totalViews: 0, totalCommission: 0 },
+				);
 
-//             return c.json({
-//                 analytics: fallbackResult.rows,
-//                 totals: {
-//                     totalSales: fallbackResult.rows.reduce(
-//                         (sum, row) => sum + Number.parseFloat(row.total_sales || 0),
-//                         0,
-//                     ),
-//                     totalOrders: fallbackResult.rows.reduce(
-//                         (sum, row) => sum + Number.parseInt(row.total_orders || 0),
-//                         0,
-//                     ),
-//                     totalViews: 0,
-//                     totalCommission: fallbackResult.rows.reduce(
-//                         (sum, row) => sum + Number.parseFloat(row.commission_earned || 0),
-//                         0,
-//                     ),
-//                 },
-//                 period: {
-//                     days: daysNum,
-//                     startDate: new Date(Date.now() - daysNum * 24 * 60 * 60 * 1000),
-//                     endDate: new Date(),
-//                 },
-//             });
-//         }
-//     }),
-// );
+				return c.json({
+					analytics,
+					totals,
+					period: {
+						days: daysNum,
+						startDate,
+						endDate,
+					},
+					dataSource: "cassandra",
+				});
+			}
+
+			// Fallback to PostgreSQL if Cassandra is not available or has no data
+			const fallbackResult = await query(
+				`SELECT
+                    DATE(oi.created_at) as date,
+                    COUNT(DISTINCT oi.order_id) as total_orders,
+                    SUM(oi.total_price) as total_sales,
+                    SUM(oi.commission_amount) as commission_earned,
+                    COUNT(DISTINCT pv.id) as total_views
+                FROM order_items oi
+                LEFT JOIN (
+                    SELECT DATE(timestamp) as view_date, COUNT(*) as view_count
+                    FROM video_views
+                    WHERE vendor_id = $1 AND timestamp >= $2
+                    GROUP BY DATE(timestamp)
+                ) pv ON DATE(oi.created_at) = pv.view_date
+                WHERE oi.vendor_id = $1 AND oi.created_at >= $2
+                GROUP BY DATE(oi.created_at)
+                ORDER BY date DESC`,
+				[vendorId, startDate],
+			);
+
+			// Get average rating from reviews
+			const ratingResult = await query(
+				`SELECT 
+                    DATE(r.created_at) as date,
+                    AVG(r.rating) as avg_rating
+                FROM reviews r
+                JOIN products p ON r.product_id = p.id
+                WHERE p.vendor_id = $1 AND r.created_at >= $2
+                GROUP BY DATE(r.created_at)`,
+				[vendorId, startDate],
+			);
+
+			// Combine the results with proper typing
+			const analytics: AnalyticsRow[] = fallbackResult.rows.map((row: any) => {
+				const ratingForDate = ratingResult.rows.find(
+					(r: any) => r.date === row.date,
+				);
+				return {
+					date: row.date,
+					total_sales: Number(row.total_sales) || 0,
+					total_orders: Number(row.total_orders) || 0,
+					total_views: Number(row.total_views) || 0,
+					avg_rating: ratingForDate ? Number(ratingForDate.avg_rating) : 0,
+					commission_earned: Number(row.commission_earned) || 0,
+				};
+			});
+
+			// Calculate totals with proper typing
+			const totals: Totals = {
+				totalSales: analytics.reduce(
+					(sum: number, row: AnalyticsRow) => sum + row.total_sales,
+					0,
+				),
+				totalOrders: analytics.reduce(
+					(sum: number, row: AnalyticsRow) => sum + row.total_orders,
+					0,
+				),
+				totalViews: analytics.reduce(
+					(sum: number, row: AnalyticsRow) => sum + row.total_views,
+					0,
+				),
+				totalCommission: analytics.reduce(
+					(sum: number, row: AnalyticsRow) => sum + row.commission_earned,
+					0,
+				),
+			};
+
+			return c.json({
+				analytics,
+				totals,
+				period: {
+					days: daysNum,
+					startDate,
+					endDate,
+				},
+				dataSource: "postgresql",
+			});
+		} catch (error) {
+			logger.error("Vendor analytics error:", error);
+			return c.json({ error: "Failed to fetch analytics" }, 500);
+		}
+	}),
+);
 
 // Request payout (vendor only)
 vendorRouter.post(

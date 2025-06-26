@@ -120,14 +120,13 @@ src/
 - `DELETE /api/products/:id` - Delete product (vendor only)
 
 ### Order Endpoints
-- `GET /api/order` -  Get orders list with filters
-- `GET /api/order/:id` - Get order details
-- `POST /api/order` - Create orders 
-- `PUT /api/order/:id/status` - Update order status
-- `POST /api/order/:id/cancel` - Cancel order
-- `POST /api/order/:id/return` - Return order
-- `GET /api/order/:id/tracking` - Get order tracking info
-
+- `GET /api/orders` -  Get orders list with filters
+- `GET /api/ordesr/:id` - Get order details
+- `POST /api/orders` - Create orders 
+- `PUT /api/orders/:id/status` - Update order status
+- `POST /api/orders/:id/cancel` - Cancel order
+- `POST /api/orders/:id/return` - Return order
+- `GET /api/orders/:id/tracking` - Get order tracking info
 
 ### Live Stream Endpoints
 - `GET /api/streams` - Get live streams
