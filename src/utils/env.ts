@@ -41,18 +41,18 @@ const envSchema = {
 	// Email Configuration
 	SMTP_HOST: z.string().default("smtp.gmail.com"),
 	SMTP_PORT: z.coerce.number().default(587),
-	SMTP_USER: z.string().email(),
-	SMTP_PASS: z.string(),
-	FROM_EMAIL: z.string().email(),
+	SMTP_USER: z.string().email().min(1, "SMTP username is required"),
+	SMTP_PASS: z.string().min(1, "SMTP password is required"),
+	FROM_EMAIL: z.string().email().min(1, "From email is required"),
 
 	// Cloudinary Configuration
-	CLOUDINARY_CLOUD_NAME: z.string().optional(),
-	CLOUDINARY_API_KEY: z.string().optional(),
-	CLOUDINARY_API_SECRET: z.string().optional(),
+	CLOUDINARY_CLOUD_NAME: z.string().min(1, "Cloudinary cloud name is required"),
+	CLOUDINARY_API_KEY: z.string().min(1, "Cloudinary API key is required"),
+	CLOUDINARY_API_SECRET: z.string().min(1, "Cloudinary API secret is required"),
 
 	// Stripe Configuration
-	STRIPE_SECRET_KEY: z.string(),
-	STRIPE_WEBHOOK_SECRET: z.string(),
+	STRIPE_SECRET_KEY: z.string().min(1, "Stripe secret key is required"),
+	STRIPE_WEBHOOK_SECRET: z.string().min(1, "Stripe webhook secret is required"),
 
 	// Media Server Configuration
 	RTMP_PORT: z.coerce.number().default(1935),
