@@ -1,13 +1,13 @@
 import { z } from "zod";
 
-const envSchema = () => ({
+const envSchema = {
 	// Server Configuration
 	NODE_ENV: z
 		.enum(["development", "production", "test"])
 		.default("development"),
 	PORT: z.coerce.number().default(5000),
 	CLIENT_URL: z.string().url().default("http://localhost:3000"),
-	APP_URL: z.string().url().optional(),
+	APP_URL: z.string().url(),
 	APP_NAME: z.string().optional(),
 	SUPPORT_EMAIL: z.string().email().optional(),
 
@@ -19,7 +19,7 @@ const envSchema = () => ({
 	POSTGRES_PASSWORD: z.string().default("password"),
 	POSTGRES_SSL: z
 		.enum(["true", "false"])
-		.optional()
+		.default("false")
 		.transform((val) => val === "true"),
 
 	// Cassandra Configuration
@@ -41,9 +41,9 @@ const envSchema = () => ({
 	// Email Configuration
 	SMTP_HOST: z.string().default("smtp.gmail.com"),
 	SMTP_PORT: z.coerce.number().default(587),
-	SMTP_USER: z.string().email().optional(),
-	SMTP_PASS: z.string().optional(),
-	FROM_EMAIL: z.string().email().optional(),
+	SMTP_USER: z.string().email(),
+	SMTP_PASS: z.string(),
+	FROM_EMAIL: z.string().email(),
 
 	// Cloudinary Configuration
 	CLOUDINARY_CLOUD_NAME: z.string().optional(),
@@ -63,15 +63,15 @@ const envSchema = () => ({
 	LOG_LEVEL: z
 		.enum(["error", "warn", "info", "http", "verbose", "debug", "silly"])
 		.default("info"),
-});
+};
 
-export type EnvSchema = ReturnType<typeof envSchema>;
+export type EnvSchema = typeof envSchema;
 
 export const validateEnv = () => {
-	const schema = envSchema();
+	const schema = z.object(envSchema);
 	const result: Record<string, any> = {};
 
-	for (const [key, validator] of Object.entries(schema)) {
+	for (const [key, validator] of Object.entries(envSchema)) {
 		try {
 			result[key] = validator.parse(Bun.env[key]);
 		} catch (error) {
@@ -80,7 +80,7 @@ export const validateEnv = () => {
 		}
 	}
 
-	return result as z.infer<z.ZodObject<typeof schema>>;
+	return result as z.infer<typeof schema>;
 };
 
 export const env = validateEnv();
