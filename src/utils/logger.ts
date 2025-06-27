@@ -1,5 +1,6 @@
 import winston from "winston";
 import "winston-daily-rotate-file";
+import { env } from "./env";
 
 const errorTransport = new winston.transports.DailyRotateFile({
 	filename: "logs/error-%DATE%.log", // Log files are saved as error-YYYY-MM-DD.log
@@ -17,7 +18,7 @@ const combinedTransport = new winston.transports.DailyRotateFile({
 });
 
 export const logger = winston.createLogger({
-	level: process.env.LOG_LEVEL || "info",
+	level: env.LOG_LEVEL || "info",
 	format: winston.format.combine(
 		winston.format.timestamp(),
 		winston.format.errors({ stack: true }),
@@ -36,7 +37,7 @@ export const logger = winston.createLogger({
 	],
 });
 
-if (process.env.NODE_ENV !== "production") {
+if (env.NODE_ENV !== "production") {
 	logger.add(
 		new winston.transports.Console({
 			format: winston.format.combine(

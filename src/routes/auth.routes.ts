@@ -15,6 +15,7 @@ import { logger } from "../utils/logger";
 import { generateOtp } from "../utils/opt";
 import { EmailService } from "../email/email.service";
 import { loginRateLimit, passwordResetRateLimit } from "../utils/limitl";
+import { env } from "../utils/env";
 
 type Variables = JwtVariables;
 
@@ -146,13 +147,10 @@ auth.post(
 				full_name: user.full_name,
 				role: user.role,
 			},
-			process.env.JWT_SECRET ?? "",
+			env.JWT_SECRET,
 		);
 
-		const refreshToken = await sign(
-			{ id: user.id },
-			process.env.JWT_REFRESH_SECRET ?? "",
-		);
+		const refreshToken = await sign({ id: user.id }, env.JWT_REFRESH_SECRET);
 
 		await setCache(`refresh_token:${user.id}`, refreshToken, 7 * 24 * 60 * 60); // 7 days
 
@@ -177,10 +175,7 @@ auth.post("/refresh", async (c) => {
 	}
 
 	try {
-		const decoded = await verify(
-			refreshToken,
-			process.env.JWT_REFRESH_SECRET ?? "",
-		);
+		const decoded = await verify(refreshToken, env.JWT_REFRESH_SECRET);
 		const storedToken = await getCache(`refresh_token:${decoded.id}`);
 		if (storedToken !== refreshToken) {
 			return c.json({ error: "Invalid refresh token" }, 401);
@@ -203,7 +198,7 @@ auth.post("/refresh", async (c) => {
 				full_name: user.full_name,
 				role: user.role,
 			},
-			process.env.JWT_SECRET ?? "",
+			env.JWT_SECRET,
 		);
 		return c.json({
 			message: "Token refreshed successfully",
@@ -353,10 +348,7 @@ auth.post("/logout", async (c) => {
 
 	if (refreshToken) {
 		try {
-			const decoded = await verify(
-				refreshToken,
-				process.env.JWT_REFRESH_SECRET ?? "",
-			);
+			const decoded = await verify(refreshToken, env.JWT_REFRESH_SECRET);
 			await deleteCache(`refresh_token:${decoded.id}`);
 		} catch (error) {
 			// Token might be invalid, but we still want to logout

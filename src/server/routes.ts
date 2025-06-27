@@ -7,6 +7,7 @@ import { paymentRouter } from "../routes/payment.routes";
 import { videoRoutes } from "../routes/video.routes";
 import { vendorRouter } from "../routes/vendor.routes";
 import { orderRouter } from "../routes/order.routes";
+import { env } from "../utils/env";
 
 export function registerRoutes(app: Hono) {
 	app.get("/", (c) => {
@@ -22,7 +23,7 @@ export function registerRoutes(app: Hono) {
 			status: "OK",
 			timestamp: new Date().toISOString(),
 			uptime: process.uptime(),
-			environment: process.env.NODE_ENV ?? "development",
+			environment: env.NODE_ENV,
 		});
 	});
 	app.route("/auth", auth);

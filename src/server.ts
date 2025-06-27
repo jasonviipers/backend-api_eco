@@ -1,4 +1,3 @@
-import dotenv from "dotenv";
 import { Hono } from "hono";
 import { Server as HttpServer } from "node:http";
 import { Server as SocketIOServer } from "socket.io";
@@ -13,8 +12,8 @@ import { initializeCloudinary } from "./config/cloudinary";
 import { initializeStripe } from "./config/stripe";
 import { setupMediaServer } from "./config/mediaServer";
 import { connectCassandra } from "./config/cassandra";
+import { env } from "./utils/env";
 
-dotenv.config();
 const app = new Hono();
 const io = new SocketIOServer(app as unknown as HttpServer);
 
@@ -42,9 +41,10 @@ async function initServices() {
 
 await initServices();
 
-const port = Number(process.env.PORT) || 3000;
+const port = env.PORT;
 Bun.serve({
 	port,
+	hostname: "0.0.0.0",
 	fetch: app.fetch,
 	error(error) {
 		logger.error("Server error:", error);

@@ -11,6 +11,7 @@ import { validateRequest } from "../middleware/validation";
 import { asyncHandler } from "../middleware/erroHandler";
 import { getStripe } from "../config/stripe";
 import { EmailService } from "../email/email.service";
+import { env } from "../utils/env";
 
 type Variables = {
 	user?: {
@@ -461,7 +462,7 @@ paymentRouter.post(
 	asyncHandler(async (c) => {
 		const stripe = getStripe();
 		const sig = c.req.header("stripe-signature") as string;
-		const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET ?? "";
+		const webhookSecret = env.STRIPE_WEBHOOK_SECRET;
 		const rawBody = await c.req.raw.arrayBuffer();
 
 		let event;

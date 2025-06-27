@@ -2,6 +2,7 @@ import type { Context, Next } from "hono";
 import { HTTPException } from "hono/http-exception";
 import type { ContentfulStatusCode } from "hono/utils/http-status";
 import { logger } from "../utils/logger";
+import { env } from "../utils/env";
 
 export interface AppError extends Error {
 	statusCode?: number;
@@ -50,14 +51,14 @@ export const errorHandler = async (
 	}
 
 	// Don't leak error details in production
-	if (process.env.NODE_ENV === "production" && statusCode === 500) {
+	if (env.NODE_ENV === "production" && statusCode === 500) {
 		message = "Internal server error";
 	}
 
 	return c.json(
 		{
 			error: message,
-			...(process.env.NODE_ENV === "development" && { stack: error.stack }),
+			...(env.NODE_ENV === "development" && { stack: error.stack }),
 		},
 		statusCode as ContentfulStatusCode,
 	);
