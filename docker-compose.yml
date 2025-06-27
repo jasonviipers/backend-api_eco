@@ -8,20 +8,20 @@ services:
     env_file:
       - .env
     environment:
-      - NODE_ENV=${NODE_ENV:-production}
-      - PORT=${APP_PORT:-5000}
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=${POSTGRES_DB:-ecommerce_platform}
-      - POSTGRES_USER=${POSTGRES_USER:-postgres}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
-      - CASSANDRA_HOST=cassandra
-      - CASSANDRA_DATACENTER=${CASSANDRA_DATACENTER:-datacenter1}
-      - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE:-ecommerce_analytics}
-      - CASSANDRA_USERNAME=${CASSANDRA_USERNAME:-cassandra}
-      - CASSANDRA_PASSWORD=${CASSANDRA_PASSWORD:-cassandra}
-      - REDIS_URL=redis://redis:6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
+          - NODE_ENV=${NODE_ENV:-production}
+          - PORT=${APP_PORT:-5000}
+          - POSTGRES_HOST=postgres
+          - POSTGRES_PORT=5432
+          - POSTGRES_DB=${POSTGRES_DB:-ecommerce_platform}
+          - POSTGRES_USER=${POSTGRES_USER:-postgres}
+          - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
+          - CASSANDRA_HOST=cassandra
+          - CASSANDRA_DATACENTER=${CASSANDRA_DATACENTER:-datacenter1}
+          - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE:-ecommerce_analytics}
+          - CASSANDRA_USERNAME=${CASSANDRA_USERNAME:-cassandra}
+          - CASSANDRA_PASSWORD=${CASSANDRA_PASSWORD:-cassandra}
+          - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
+          - REDIS_PASSWORD=${REDIS_PASSWORD}
     depends_on:
       postgres:
         condition: service_healthy
@@ -85,15 +85,13 @@ services:
 
   redis:
     image: redis:7-alpine
-    environment:
-      - REDIS_PASSWORD=${REDIS_PASSWORD}
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
       - redis_data:/data
-    command: ["redis-server", "--requirepass $${REDIS_PASSWORD}", "--appendonly yes"]
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
     healthcheck:
-      test: ["CMD", "redis-cli", "-a", "$${REDIS_PASSWORD}", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
       interval: 10s
       timeout: 5s
       retries: 5
