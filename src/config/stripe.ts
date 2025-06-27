@@ -1,15 +1,12 @@
 import Stripe from "stripe";
 import { logger } from "../utils/logger";
+import { env } from "../utils/env";
 
 let stripe: Stripe;
 
 export const initializeStripe = (): void => {
 	try {
-		if (!process.env.STRIPE_SECRET_KEY) {
-			throw new Error("STRIPE_SECRET_KEY is required");
-		}
-
-		stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+		stripe = new Stripe(env.STRIPE_SECRET_KEY, {
 			apiVersion: "2025-05-28.basil",
 		});
 

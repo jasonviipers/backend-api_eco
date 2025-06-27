@@ -1,8 +1,8 @@
 import { verify } from "hono/jwt";
 import type { Socket, Server as SocketIOServer } from "socket.io";
-import type { CustomJWTPayload } from "../routes/auth.routes";
 import { logger } from "../utils/logger";
 import { executeQuery } from "./cassandra";
+import { env } from "../utils/env";
 
 interface AuthenticatedSocket extends Socket {
 	userId?: string;
@@ -18,10 +18,10 @@ export const setupSocketIO = async (io: SocketIOServer) => {
 				return next(new Error("Authentication error"));
 			}
 
-			const decoded = (await verify(
-				token,
-				process.env.JWT_SECRET ?? "",
-			)) as CustomJWTPayload;
+			const decoded = (await verify(token, env.JWT_SECRET)) as {
+				id: string;
+				role: string;
+			};
 			socket.userId = decoded.id;
 			socket.userRole = decoded.role;
 			next();

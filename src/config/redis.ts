@@ -1,13 +1,14 @@
 import { createClient } from "redis";
 import { logger } from "../utils/logger";
+import { env } from "../utils/env";
 
 let redisClient: ReturnType<typeof createClient>;
 
 export const connectRedis = async (): Promise<void> => {
 	try {
 		redisClient = createClient({
-			url: process.env.REDIS_URL || "redis://localhost:6379",
-			password: process.env.REDIS_PASSWORD,
+			url: env.REDIS_URL,
+			password: env.REDIS_PASSWORD,
 		});
 
 		redisClient.on("error", (err) => {

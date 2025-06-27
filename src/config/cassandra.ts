@@ -1,22 +1,35 @@
 import { Client } from "cassandra-driver";
 import { logger } from "../utils/logger";
+import { env } from "../utils/env";
 
 let client: Client;
-
+export interface CassandraConfig {
+	contactPoints: string[];
+	localDataCenter: string;
+	credentials?: { username: string; password: string };
+	keyspace?: string;
+	socketOptions?: {
+		connectTimeout?: number;
+		defunctReadTimeoutThreshold?: number;
+		keepAlive?: boolean;
+		keepAliveDelay?: number;
+		readTimeout?: number;
+		tcpNoDelay?: boolean;
+	};
+}
 export const connectCassandra = async (
 	useKeyspace: boolean = true,
 ): Promise<void> => {
 	const maxRetries = 10;
 	const retryDelay = 5000; // 5 seconds
-
 	for (let attempt = 1; attempt <= maxRetries; attempt++) {
 		try {
-			const clientConfig: any = {
-				contactPoints: [process.env.CASSANDRA_HOST || "cassandra"],
-				localDataCenter: process.env.CASSANDRA_DATACENTER || "datacenter1",
+			const clientConfig: CassandraConfig = {
+				contactPoints: [env.CASSANDRA_HOST],
+				localDataCenter: env.CASSANDRA_DATACENTER,
 				credentials: {
-					username: process.env.CASSANDRA_USERNAME || "cassandra",
-					password: process.env.CASSANDRA_PASSWORD || "cassandra",
+					username: env.CASSANDRA_USERNAME,
+					password: env.CASSANDRA_PASSWORD,
 				},
 				socketOptions: {
 					connectTimeout: 30000, // 30 seconds timeout
@@ -25,8 +38,7 @@ export const connectCassandra = async (
 
 			// Only add keyspace if requested (after migrations)
 			if (useKeyspace) {
-				clientConfig.keyspace =
-					process.env.CASSANDRA_KEYSPACE || "ecommerce_analytics";
+				clientConfig.keyspace = env.CASSANDRA_KEYSPACE || "ecommerce_analytics";
 			}
 
 			client = new Client(clientConfig);

@@ -2,7 +2,11 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { connectPostgreSQL, query } from "../src/config/postgresql";
 import { logger } from "../src/utils/logger";
-import { connectCassandra, executeQuery } from "../src/config/cassandra";
+import {
+	connectCassandra,
+	executeQuery,
+	reconnectWithKeyspace,
+} from "../src/config/cassandra";
 
 function splitSQLStatements(sql: string): string[] {
 	const statements: string[] = [];
@@ -53,7 +57,7 @@ function splitSQLStatements(sql: string): string[] {
 	return statements.filter((statement) => statement.length > 0);
 }
 
-async function runPostgreSQLMigrations() {
+export async function runPostgreSQLMigrations() {
 	try {
 		const sql = await readFile(
 			join(__dirname, "../src/db/postgresql-schema.sql"),
@@ -83,7 +87,7 @@ async function runPostgreSQLMigrations() {
 	}
 }
 
-async function runCassandraMigrations() {
+export async function runCassandraMigrations() {
 	try {
 		const sql = await readFile(
 			join(__dirname, "../src/db/cassandra-schema.cql"),
@@ -122,24 +126,34 @@ async function runCassandraMigrations() {
 	}
 }
 
-async function migrate() {
+export async function migrate() {
 	try {
 		logger.info("Starting database migrations...");
 
 		// Connect to databases
 		await connectPostgreSQL();
-		await connectCassandra();
+
+		// Connect to Cassandra WITHOUT keyspace first
+		await connectCassandra(false);
 
 		// Run migrations
 		await runPostgreSQLMigrations();
 		await runCassandraMigrations();
 
+		// Reconnect to Cassandra WITH keyspace after migrations
+		await reconnectWithKeyspace();
+
 		logger.info("All database migrations completed successfully");
-		process.exit(0);
+		return true; // Return success instead of process.exit for server usage
 	} catch (error) {
 		logger.error("Migration failed:", error);
-		process.exit(1);
+		throw error; // Throw error instead of process.exit for server usage
 	}
 }
 
-migrate();
+// Only exit process if run directly (not imported)
+if (import.meta.url === `file://${process.argv[1]}`) {
+	migrate()
+		.then(() => process.exit(0))
+		.catch(() => process.exit(1));
+}

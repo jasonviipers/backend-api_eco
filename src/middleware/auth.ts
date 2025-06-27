@@ -3,6 +3,7 @@ import { verify } from "hono/jwt";
 
 import { query } from "../config/postgresql";
 import { logger } from "../utils/logger";
+import { env } from "../utils/env";
 
 type AuthVariables = {
 	user?: {
@@ -22,7 +23,7 @@ export const authenticateToken = async (c: Context, next: Next) => {
 			return c.json({ message: "Access token required" }, 401);
 		}
 
-		const decoded = (await verify(token, process.env.JWT_SECRET || "")) as {
+		const decoded = (await verify(token, env.JWT_SECRET)) as {
 			id: string;
 		};
 

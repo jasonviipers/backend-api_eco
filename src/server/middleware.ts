@@ -3,6 +3,7 @@ import { poweredBy } from "hono/powered-by";
 import { secureHeaders } from "hono/secure-headers";
 import { cors } from "hono/cors";
 import { rateLimiter } from "../middleware/rateLimiter";
+import { env } from "../utils/env";
 
 export function registerGlobalMiddleware(app: Hono) {
 	app.use("*", poweredBy());
@@ -10,7 +11,7 @@ export function registerGlobalMiddleware(app: Hono) {
 	app.use(
 		"*",
 		cors({
-			origin: process.env.CLIENT_URL?.split(",") ?? ["http://localhost:3000"],
+			origin: env.CLIENT_URL?.split(","),
 			credentials: true,
 			allowHeaders: ["Content-Type", "Authorization"],
 			allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],

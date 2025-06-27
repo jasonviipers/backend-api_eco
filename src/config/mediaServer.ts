@@ -1,6 +1,7 @@
 import NodeMediaServer from "node-media-server";
 import { logger } from "../utils/logger";
 import { query } from "./postgresql";
+import { env } from "../utils/env";
 
 interface MediaServerConfig {
 	rtmp: {
@@ -39,21 +40,21 @@ interface MediaServerConfig {
 export const setupMediaServer = (): void => {
 	const config: MediaServerConfig = {
 		rtmp: {
-			port: Number.parseInt(process.env.RTMP_PORT || "1935"),
+			port: env.RTMP_PORT,
 			chunk_size: 60000,
 			gop_cache: true,
 			ping: 30,
 			ping_timeout: 60,
 		},
 		http: {
-			port: Number.parseInt(process.env.MEDIA_HTTP_PORT || "8000"),
+			port: env.MEDIA_HTTP_PORT,
 			allow_origin: "*",
 			mediaroot: "./media",
 		},
 		auth: {
 			play: false,
 			publish: true,
-			secret: process.env.RTMP_SECRET || "supersecret",
+			secret: env.RTMP_SECRET,
 		},
 	};
 

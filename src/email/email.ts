@@ -1,21 +1,19 @@
 import nodemailer from "nodemailer";
+import { env } from "../utils/env";
 
 export const emailTransporter = nodemailer.createTransport({
-	host: process.env.SMTP_HOST || "smtp.gmail.com",
-	port: Number.parseInt(process.env.SMTP_PORT || "587"),
+	host: env.SMTP_HOST,
+	port: env.SMTP_PORT,
 	secure: false,
 	auth: {
-		user: process.env.SMTP_USER,
-		pass: process.env.SMTP_PASS,
+		user: env.SMTP_USER,
+		pass: env.SMTP_PASS,
 	},
 });
 
 export const emailConfig = {
-	from: process.env.FROM_EMAIL,
-	supportEmail: process.env.SUPPORT_EMAIL,
-	appName: process.env.APP_NAME,
-	appUrl:
-		process.env.NODE_ENV === "production"
-			? process.env.APP_URL
-			: "localhost:5000",
+	from: env.FROM_EMAIL,
+	supportEmail: env.SUPPORT_EMAIL,
+	appName: env.APP_NAME,
+	appUrl: env.NODE_ENV === "production" ? env.APP_URL : "localhost:5000",
 };
