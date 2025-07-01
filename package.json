@@ -5,10 +5,12 @@
 		"build": "bun build src/server.ts --outdir dist --target node",
 		"dev": "bun run --hot src/server.ts",
 		"migrate": "bun run scripts/migrate.ts",
+		"drops": "bun run scripts/migrate.ts rollback",
 		"lint": " bunx biome format --write"
 	},
 	"dependencies": {
 		"@paralleldrive/cuid2": "^2.2.2",
+		"@simplewebauthn/server": "^13.1.1",
 		"busboy": "^1.6.0",
 		"cassandra-driver": "latest",
 		"cloudinary": "latest",

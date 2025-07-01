@@ -1,3 +1,6 @@
+/**
+ * Generate a secure numeric OTP
+ */
 export const generateOtp = (length: string = "6") => {
 	const charset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 	const randomString = Array.from(

@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { query } from "../config/postgresql";
-import { executeQuery } from "../config/cassandra";
 import { authenticateToken, requireAdmin } from "../middleware/auth";
 import { validateRequest } from "../middleware/validation";
 import { asyncHandler } from "../middleware/erroHandler";
@@ -121,9 +120,16 @@ videoRoutes.get(
 		);
 
 		// Track view in Cassandra
-		await executeQuery(
-			"INSERT INTO video_views (video_id, user_id, event_type, timestamp) VALUES (?, ?, ?, ?)",
-			[id, c.get("user").id || "anonymous", "view", new Date()],
+		await query(
+			`INSERT INTO video_analytics 
+				(video_id, user_id, event_type, timestamp) 
+				VALUES ($1, $2, $3, $4)`,
+			[
+				id,
+				c.get("user").id || null, // null for anonymous
+				"view",
+				new Date(),
+			],
 		);
 
 		return c.json(video);
@@ -284,8 +290,7 @@ videoRoutes.post(
 				[id],
 			);
 
-			// Track like in Cassandra
-			await executeQuery(
+			await query(
 				"INSERT INTO video_views (video_id, user_id, event_type, timestamp) VALUES (?, ?, ?, ?)",
 				[id, userId, "like", new Date()],
 			);

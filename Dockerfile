@@ -1,4 +1,5 @@
-FROM oven/bun:latest AS builder
+# Both stages use Alpine-based images
+FROM oven/bun:1.1.13-alpine AS builder
 
 WORKDIR /app
 

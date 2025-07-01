@@ -12,7 +12,7 @@ export const connectPostgreSQL = async (): Promise<void> => {
 			database: env.POSTGRES_DB,
 			user: env.POSTGRES_USER,
 			password: env.POSTGRES_PASSWORD,
-			max: 20,
+			max: 10,
 			idleTimeoutMillis: 30000,
 			connectionTimeoutMillis: 2000,
 			ssl: env.POSTGRES_SSL ? { rejectUnauthorized: false } : undefined,
@@ -48,3 +48,12 @@ export const query = async (text: string, params?: any[]): Promise<any> => {
 		client.release();
 	}
 };
+
+export const executeStatement = async (statement: string): Promise<void> => {
+	const client = await pool.connect();
+	try {
+		await client.query(statement);
+	} finally {
+		client.release();
+	}
+}
