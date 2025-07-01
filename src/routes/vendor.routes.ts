@@ -1,7 +1,6 @@
 import { Hono } from "hono";
 import { cloudinary } from "../config/cloudinary";
 import { query } from "../config/postgresql";
-import { executeQuery } from "../config/cassandra";
 import { setCache, getCache, deleteCache } from "../config/redis";
 import {
 	authenticateToken,
@@ -498,7 +497,7 @@ vendorRouter.get(
 
 			let analyticsResult;
 			try {
-				analyticsResult = await executeQuery(
+				analyticsResult = await query(
 					`SELECT date, total_sales, total_orders, total_views, avg_rating, commission_earned
                      FROM vendor_analytics
                      WHERE vendor_id = ? AND date >= ? AND date <= ?

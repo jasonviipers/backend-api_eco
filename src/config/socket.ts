@@ -1,8 +1,8 @@
 import { verify } from "hono/jwt";
 import type { Socket, Server as SocketIOServer } from "socket.io";
 import { logger } from "../utils/logger";
-import { executeQuery } from "./cassandra";
 import { env } from "../utils/env";
+import { query } from "./postgresql";
 
 interface AuthenticatedSocket extends Socket {
 	userId?: string;
@@ -41,7 +41,7 @@ export const setupSocketIO = async (io: SocketIOServer) => {
 			socket.join(`stream_${streamId}`);
 
 			// Track viewer join in Cassandra
-			await executeQuery(
+			await query(
 				"INSERT INTO stream_analytics (stream_id, user_id, event_type, timestamp) VALUES (?, ?, ?, ?)",
 				[streamId, socket.userId, "viewer_joined", new Date()],
 			);
@@ -56,7 +56,7 @@ export const setupSocketIO = async (io: SocketIOServer) => {
 			socket.leave(`stream_${streamId}`);
 
 			// Track viewer leave in Cassandra
-			await executeQuery(
+			await query(
 				"INSERT INTO stream_analytics (stream_id, user_id, event_type, timestamp) VALUES (?, ?, ?, ?)",
 				[streamId, socket.userId, "viewer_left", new Date()],
 			);
@@ -80,7 +80,7 @@ export const setupSocketIO = async (io: SocketIOServer) => {
 				};
 
 				// Store message in Cassandra
-				await executeQuery(
+				await query(
 					"INSERT INTO chat_messages (stream_id, message_id, user_id, message, timestamp) VALUES (?, ?, ?, ?, ?)",
 					[
 						data.streamId,
@@ -98,14 +98,14 @@ export const setupSocketIO = async (io: SocketIOServer) => {
 
 		// Video interaction events
 		socket.on("video_like", async (videoId: string) => {
-			await executeQuery(
+			await query(
 				"INSERT INTO video_views (video_id, user_id, event_type, timestamp) VALUES (?, ?, ?, ?)",
 				[videoId, socket.userId, "like", new Date()],
 			);
 		});
 
 		socket.on("video_view", async (videoId: string) => {
-			await executeQuery(
+			await query(
 				"INSERT INTO video_views (video_id, user_id, event_type, timestamp) VALUES (?, ?, ?, ?)",
 				[videoId, socket.userId, "view", new Date()],
 			);

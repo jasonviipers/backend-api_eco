@@ -319,6 +319,78 @@ CREATE TABLE refunds (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Analytics tables 
+CREATE TABLE stream_analytics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    stream_id UUID REFERENCES live_streams(id) ON DELETE CASCADE,
+    timestamp TIMESTAMP NOT NULL,
+    user_id UUID REFERENCES users(id),
+    event_type TEXT NOT NULL CHECK (event_type IN ('viewer_joined', 'viewer_left', 'purchase', 'chat_message')),
+    concurrent_viewers INTEGER,
+    revenue DECIMAL(10,2),
+    product_id UUID REFERENCES products(id),
+    session_id UUID,
+    device_type TEXT,
+    location TEXT,
+    metadata JSONB
+);
+
+CREATE TABLE chat_messages (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    stream_id UUID REFERENCES live_streams(id) ON DELETE CASCADE,
+    timestamp TIMESTAMP NOT NULL,
+    user_id UUID REFERENCES users(id),
+    message TEXT NOT NULL,
+    user_name TEXT,
+    is_moderator BOOLEAN DEFAULT false,
+    sentiment_score DOUBLE PRECISION,
+    metadata JSONB
+);
+
+CREATE TABLE video_analytics (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    video_id UUID REFERENCES short_videos(id) ON DELETE CASCADE,
+    timestamp TIMESTAMP NOT NULL,
+    user_id UUID REFERENCES users(id),
+    event_type TEXT NOT NULL CHECK (event_type IN ('view', 'like', 'share', 'comment', 'view_start', 'view_end')),
+    session_id UUID,
+    watch_duration INTEGER,
+    device_type TEXT,
+    location TEXT,
+    user_agent TEXT,
+    referrer TEXT,
+    metadata JSONB
+);
+
+CREATE TABLE user_activities (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    timestamp TIMESTAMP NOT NULL,
+    activity_type TEXT NOT NULL,
+    entity_type TEXT CHECK (entity_type IN ('product', 'stream', 'video', 'order', 'search', 'cart')),
+    entity_id UUID,
+    metadata JSONB,
+    session_id UUID,
+    device_type TEXT
+);
+
+CREATE TABLE vendor_analytics_daily (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    vendor_id UUID REFERENCES vendors(id) ON DELETE CASCADE,
+    date DATE NOT NULL,
+    total_sales DECIMAL(12,2) DEFAULT 0.00,
+    total_orders INTEGER DEFAULT 0,
+    total_views INTEGER DEFAULT 0,
+    unique_visitors INTEGER DEFAULT 0,
+    avg_rating DOUBLE PRECISION DEFAULT 0.00,
+    commission_earned DECIMAL(12,2) DEFAULT 0.00,
+    new_followers INTEGER DEFAULT 0,
+    total_followers INTEGER DEFAULT 0,
+    live_stream_views INTEGER DEFAULT 0,
+    video_views INTEGER DEFAULT 0,
+    UNIQUE(vendor_id, date)
+);
+
 -- Create indexes for better performance
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_role ON users(role);
@@ -361,3 +433,17 @@ CREATE TRIGGER update_live_streams_updated_at BEFORE UPDATE ON live_streams FOR 
 CREATE TRIGGER update_short_videos_updated_at BEFORE UPDATE ON short_videos FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_payouts_updated_at BEFORE UPDATE ON payouts FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 CREATE TRIGGER update_refunds_updated_at BEFORE UPDATE ON refunds FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+-- Indexes for analytics tables
+CREATE INDEX idx_stream_analytics_stream_id ON stream_analytics(stream_id);
+CREATE INDEX idx_stream_analytics_timestamp ON stream_analytics(timestamp);
+CREATE INDEX idx_stream_analytics_event_type ON stream_analytics(event_type);
+CREATE INDEX idx_chat_messages_stream_id ON chat_messages(stream_id);
+CREATE INDEX idx_chat_messages_timestamp ON chat_messages(timestamp);
+CREATE INDEX idx_video_analytics_video_id ON video_analytics(video_id);
+CREATE INDEX idx_video_analytics_event_type ON video_analytics(event_type);
+CREATE INDEX idx_video_analytics_timestamp ON video_analytics(timestamp);
+CREATE INDEX idx_user_activities_user_id ON user_activities(user_id);
+CREATE INDEX idx_user_activities_timestamp ON user_activities(timestamp);
+CREATE INDEX idx_vendor_analytics_daily_vendor_id ON vendor_analytics_daily(vendor_id);
+CREATE INDEX idx_vendor_analytics_daily_date ON vendor_analytics_daily(date);

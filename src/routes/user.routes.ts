@@ -1,5 +1,4 @@
 import { Hono } from "hono";
-import { executeQuery } from "../config/cassandra";
 import { query } from "../config/postgresql";
 import { deleteCache, getCache, setCache } from "../config/redis";
 import { authenticateToken } from "../middleware/auth";
@@ -107,7 +106,7 @@ userRouter
 			await deleteCache(`user_profile:${userId}`);
 
 			// Track activity
-			await executeQuery(
+			await query(
 				"INSERT INTO user_activities (user_id, timestamp, activity_type, entity_type, entity_id) VALUES (?, ?, ?, ?, ?)",
 				[userId, new Date(), "profile_update", "user", userId],
 			);
@@ -697,7 +696,7 @@ userRouter.get(
 		const limitNum = Number.parseInt(limit);
 
 		try {
-			const activities = await executeQuery(
+			const activities = await query(
 				"SELECT * FROM user_activities WHERE user_id = ? ORDER BY timestamp DESC LIMIT ?",
 				[userId, limitNum],
 			);

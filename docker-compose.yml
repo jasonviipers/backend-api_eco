@@ -15,17 +15,10 @@ services:
           - POSTGRES_DB=${POSTGRES_DB:-ecommerce_platform}
           - POSTGRES_USER=${POSTGRES_USER:-postgres}
           - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-password}
-          - CASSANDRA_HOST=cassandra
-          - CASSANDRA_DATACENTER=${CASSANDRA_DATACENTER:-datacenter1}
-          - CASSANDRA_KEYSPACE=${CASSANDRA_KEYSPACE:-ecommerce_analytics}
-          - CASSANDRA_USERNAME=${CASSANDRA_USERNAME:-cassandra}
-          - CASSANDRA_PASSWORD=${CASSANDRA_PASSWORD:-cassandra}
           - REDIS_URL=redis://:${REDIS_PASSWORD}@redis:6379
           - REDIS_PASSWORD=${REDIS_PASSWORD}
     depends_on:
       postgres:
-        condition: service_healthy
-      cassandra:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -51,36 +44,11 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./src/db/postgresql-schema.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-ecommerce_platform}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-ecommerce_platform}"]
       interval: 10s
       timeout: 10s
       retries: 10
       start_period: 30s
-    restart: unless-stopped
-
-  cassandra:
-    image: cassandra:5.0
-    environment:
-      - CASSANDRA_CLUSTER_NAME=${CASSANDRA_CLUSTER_NAME:-ecommerce_cluster}
-      - CASSANDRA_DC=${CASSANDRA_DATACENTER:-datacenter1}
-      - CASSANDRA_RACK=rack1
-      - CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch
-      - CASSANDRA_USER=${CASSANDRA_USERNAME:-cassandra}
-      - CASSANDRA_PASSWORD=${CASSANDRA_PASSWORD:-cassandra}
-      - HEAP_NEWSIZE=256M
-      - MAX_HEAP_SIZE=1G
-    ports:
-      - "${CASSANDRA_PORT:-9042}:9042"
-    volumes:
-      - cassandra_data:/var/lib/cassandra
-      - ./src/db/cassandra-schema.cql:/docker-entrypoint-initdb.d/init.cql
-      - ./cassandra.sh:/docker-entrypoint-initdb.d/cassandra.sh
-    healthcheck:
-      test: ["CMD-SHELL", "cqlsh -u $${CASSANDRA_USER:-cassandra} -p $${CASSANDRA_PASSWORD:-cassandra} -e 'DESCRIBE KEYSPACES' || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
-      start_period: 120s
     restart: unless-stopped
 
   redis:
@@ -112,6 +80,5 @@ services:
 
 volumes:
   postgres_data:
-  cassandra_data:
   redis_data:
   app_logs:
