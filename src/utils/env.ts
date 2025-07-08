@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const envSchema = {
+const envSchema = z.object({
 	// Server Configuration
 	NODE_ENV: z
 		.enum(["development", "production", "test"])
@@ -21,13 +21,6 @@ const envSchema = {
 		.enum(["true", "false"])
 		.default("false")
 		.transform((val) => val === "true"),
-
-	// Cassandra Configuration
-	CASSANDRA_HOST: z.string().default("cassandra"),
-	CASSANDRA_DATACENTER: z.string().default("datacenter1"),
-	CASSANDRA_KEYSPACE: z.string().default("ecommerce_analytics"),
-	CASSANDRA_USERNAME: z.string().default("cassandra"),
-	CASSANDRA_PASSWORD: z.string().default("cassandra"),
 
 	// Redis Configuration
 	REDIS_URL: z.string().default("redis://localhost:6379"),
@@ -63,24 +56,28 @@ const envSchema = {
 	LOG_LEVEL: z
 		.enum(["error", "warn", "info", "http", "verbose", "debug", "silly"])
 		.default("info"),
-};
+});
 
-export type EnvSchema = typeof envSchema;
+export type EnvSchema = z.infer<typeof envSchema>;
 
-export const validateEnv = () => {
-	const schema = z.object(envSchema);
-	const result: Record<string, any> = {};
-
-	for (const [key, validator] of Object.entries(envSchema)) {
-		try {
-			result[key] = validator.parse(Bun.env[key]);
-		} catch (error) {
-			console.error(`Environment validation error for ${key}:`, error);
-			throw error;
+export const validateEnv = (): EnvSchema => {
+	try {
+		// Parse all environment variables at once
+		const result = envSchema.parse(Bun.env);
+		console.log('Environment validation successful');
+		console.log('RTMP_PORT:', result.RTMP_PORT);
+		console.log('MEDIA_HTTP_PORT:', result.MEDIA_HTTP_PORT);
+		return result;
+	} catch (error) {
+		console.error('Environment validation failed:', error);
+		if (error instanceof z.ZodError) {
+			console.error('Validation errors:');
+			error.errors.forEach((err) => {
+				console.error(`- ${err.path.join('.')}: ${err.message}`);
+			});
 		}
+		throw error;
 	}
-
-	return result as z.infer<typeof schema>;
 };
 
 export const env = validateEnv();

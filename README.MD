@@ -112,6 +112,13 @@ src/
 - `POST /api/auth/forgot-password` - Password reset request
 - `POST /api/auth/reset-password` - Password reset
 
+### Vendor Endpoints
+- `GET /api/vendors` - Get vendors list
+- `GET /api/vendors/:id` - Get vendor details
+- `POST /api/vendors` - Create vendor
+- `PUT /api/vendors/:id` - Update vendor
+- `DELETE /api/vendors/:id` - Delete vendor
+
 ### Product Endpoints
 - `GET /api/products` - Get products with filters
 - `GET /api/products/:id` - Get single product

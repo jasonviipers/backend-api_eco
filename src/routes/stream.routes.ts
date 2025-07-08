@@ -1,6 +1,5 @@
 import { createId } from "@paralleldrive/cuid2";
 import { Hono } from "hono";
-import { executeQuery } from "../config/cassandra";
 import { query } from "../config/postgresql";
 import { getCache, setCache } from "../config/redis";
 import { authenticateToken, requireVendor } from "../middleware/auth";
@@ -288,18 +287,24 @@ streamRouter.get(
 		}
 
 		// Get analytics from Cassandra
-		const viewerAnalytics = await executeQuery(
-			"SELECT COUNT(*) as total_viewers FROM stream_analytics WHERE stream_id = ? AND event_type = ?",
+		const viewerAnalytics = await query(
+			`SELECT COUNT(DISTINCT user_id) as total_viewers 
+       FROM stream_analytics 
+       WHERE stream_id = $1 AND event_type = $2`,
 			[id, "viewer_joined"],
 		);
 
-		const peakViewers = await executeQuery(
-			"SELECT MAX(concurrent_viewers) as peak_viewers FROM stream_analytics WHERE stream_id = ?",
+		const peakViewers = await query(
+			`SELECT MAX(concurrent_viewers) as peak_viewers 
+       FROM stream_analytics 
+       WHERE stream_id = $1`,
 			[id],
 		);
 
-		const chatMessages = await executeQuery(
-			"SELECT COUNT(*) as total_messages FROM chat_messages WHERE stream_id = ?",
+		const chatMessages = await query(
+			`SELECT COUNT(*) as total_messages 
+       FROM chat_messages 
+       WHERE stream_id = $1`,
 			[id],
 		);
 
@@ -320,8 +325,11 @@ streamRouter.get(
 		const { limit = "50" } = c.req.query();
 		const limitNum = Number.parseInt(limit);
 
-		const messages = await executeQuery(
-			"SELECT * FROM chat_messages WHERE stream_id = ? ORDER BY timestamp DESC LIMIT ?",
+		const messages = await query(
+			`SELECT * FROM chat_messages 
+       WHERE stream_id = $1 
+       ORDER BY timestamp DESC 
+       LIMIT $2`,
 			[id, limitNum],
 		);
 

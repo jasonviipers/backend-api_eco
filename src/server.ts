@@ -11,7 +11,6 @@ import { connectRedis } from "./config/redis";
 import { initializeCloudinary } from "./config/cloudinary";
 import { initializeStripe } from "./config/stripe";
 import { setupMediaServer } from "./config/mediaServer";
-import { connectCassandra } from "./config/cassandra";
 import { env } from "./utils/env";
 
 const app = new Hono();
@@ -27,7 +26,6 @@ async function initServices() {
 		await Promise.all([
 			connectPostgreSQL(),
 			connectRedis(),
-			connectCassandra(),
 		]);
 		await Promise.all([initializeCloudinary(), initializeStripe()]);
 		setupMediaServer();
